@@ -72,6 +72,13 @@ export function savingsCheck(a: ApplicantInput, n: NoticeInput): Check {
   return chk(label, '제48조 제2호', 'check', '지역·면적별 예치기준금액(별표 2) 이상 냈는지 확인하세요');
 }
 
+/** 민영주택 특별공급의 전용 85㎡ 이하 요건. 국민주택이거나 85㎡ 이하로 확인되면 줄을 내지 않는다(null) */
+export function privateAreaCheck(n: NoticeInput, article: string, kindLabel: string): Check | null {
+  if (n.supplyKind === 'national') return null;
+  if (n.areaExcl == null) return chk('전용 85㎡ 이하', article, 'check', `전용면적을 확인하세요 — 민영주택 ${kindLabel} 특별공급은 85㎡ 이하만`);
+  return n.areaExcl > 85 ? chk('전용 85㎡ 이하', article, 'no', `민영주택 ${kindLabel} 특별공급은 전용 85㎡ 이하만`) : null;
+}
+
 export function rank1Check(n: NoticeInput): Check {
   return chk('청약 1순위', n.supplyKind === 'national' ? '제27조 제1항' : '제28조 제1항', 'check',
     '1순위 여부(가입 기간·납입·거주 지역)는 청약홈에서 확인하세요');

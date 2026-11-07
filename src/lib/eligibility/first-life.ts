@@ -1,6 +1,6 @@
 // 제43조 생애최초 특별공급 — ① 국민(제27조 ① 1순위 + 저축 600만원, 소득 130%), ③ 민영 85㎡ 이하(제28조 ① 1순위, 소득 160%).
 // 단독세대주·세대원이 아닌 동거인은 전용 60㎡ 이하만(같은 조 후단). 제55조의3 ③ 특례 대상이 아니다.
-import { chk, homelessCheck, incomeCheck, oneTimeCheck, rank1Check } from './common';
+import { chk, homelessCheck, incomeCheck, oneTimeCheck, privateAreaCheck, rank1Check } from './common';
 import { incomeTableFor, type IncomeTable } from './income';
 import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeResult } from './types';
 
@@ -8,8 +8,11 @@ export function judgeFirstLife(a: ApplicantInput, n: NoticeInput, tables: readon
   const national = n.supplyKind === 'national';
   const article = national ? '제43조 제1항' : '제43조 제3항';
   const checks: Check[] = [];
-  if (!national && n.areaExcl > 85) checks.push(chk('전용 85㎡ 이하', article, 'no', '민영주택 생애최초 특별공급은 전용 85㎡ 이하만'));
-  if (n.areaExcl > 60) {
+  const area = privateAreaCheck(n, article, '생애최초');
+  if (area) checks.push(area);
+  if (n.areaExcl == null) {
+    if (a.singleHousehold !== false) checks.push(chk('전용 60㎡ 이하(단독세대)', article, 'check', '전용면적을 확인하세요 — 단독세대면 전용 60㎡ 이하만 신청 가능'));
+  } else if (n.areaExcl > 60) {
     if (a.singleHousehold === true) checks.push(chk('전용 60㎡ 이하(단독세대)', article, 'no', '단독세대는 전용 60㎡ 이하만 신청 가능'));
     else if (a.singleHousehold == null) checks.push(chk('전용 60㎡ 이하(단독세대)', article, 'check', '단독세대면 전용 60㎡ 이하만 신청 가능'));
   }

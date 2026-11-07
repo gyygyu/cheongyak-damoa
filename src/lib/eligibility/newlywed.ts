@@ -1,5 +1,5 @@
 // 제41조 신혼부부 특별공급 — ① 민영 85㎡ 이하, ④ 국민. 소득 140%(배우자 소득 있으면 160%), 넘으면 부동산 가액 기준.
-import { chk, homelessCheck, incomeCheck, oneTimeCheck, savingsCheck, withinYears } from './common';
+import { chk, homelessCheck, incomeCheck, oneTimeCheck, privateAreaCheck, savingsCheck, withinYears } from './common';
 import { incomeTableFor, type IncomeTable } from './income';
 import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeResult } from './types';
 
@@ -14,9 +14,8 @@ export function newlywedRank(a: ApplicantInput): '1순위' | '2순위' | '확인
 export function judgeNewlywed(a: ApplicantInput, n: NoticeInput, tables: readonly IncomeTable[]): TypeResult {
   const article = n.supplyKind === 'national' ? '제41조 제4항' : '제41조 제1항';
   const checks: Check[] = [];
-  if (n.supplyKind === 'private' && n.areaExcl > 85) {
-    checks.push(chk('전용 85㎡ 이하', article, 'no', '민영주택 신혼부부 특별공급은 전용 85㎡ 이하만'));
-  }
+  const area = privateAreaCheck(n, article, '신혼부부');
+  if (area) checks.push(area);
   if (a.marriageDate == null) checks.push(chk('혼인 7년 이내', article, 'no', '혼인 중이어야 함(혼인신고일 기준)'));
   else if (n.noticeDate == null) checks.push(chk('혼인 7년 이내', article, 'check', '공고일을 확인하세요'));
   else {

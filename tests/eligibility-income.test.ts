@@ -41,8 +41,9 @@ describe('withinIncome — 소수 없이 정수 비교', () => {
 });
 
 describe('incomeTableFor — 공고일이 속한 해의 표', () => {
-  it('2026년 공고는 2026 표, 2025년·날짜 없음은 null', () => {
-    expect(incomeTableFor(INCOME_TABLES, '2026-01-01')?.year).toBe(2026);
+  it('2026년 표는 적용 시작일(2026-07-01)부터, 그 전·2025년·날짜 없음은 null', () => {
+    expect(incomeTableFor(INCOME_TABLES, '2026-07-01')?.year).toBe(2026);
+    expect(incomeTableFor(INCOME_TABLES, '2026-06-30')).toBeNull();
     expect(incomeTableFor(INCOME_TABLES, '2026-12-31')?.year).toBe(2026);
     expect(incomeTableFor(INCOME_TABLES, '2025-12-31')).toBeNull();
     expect(incomeTableFor(INCOME_TABLES, null)).toBeNull();

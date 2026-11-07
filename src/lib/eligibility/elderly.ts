@@ -11,7 +11,9 @@ function dateCheck(label: string, article: string, date: string | null, years: n
 }
 
 export function judgeElderly(a: ApplicantInput, n: NoticeInput, tables: readonly IncomeTable[]): TypeResult {
-  const public85 = n.publicBuilder === true && n.areaExcl <= 85;
+  const public85 = n.publicBuilder === true && n.areaExcl != null && n.areaExcl <= 85;
+  // 공공 사업주체 여부나 면적을 몰라 제3항(세대주 요건 없음)일 수도 있는 경우
+  const maybe85 = !public85 && n.publicBuilder !== false && (n.areaExcl == null || n.areaExcl <= 85);
   const article = public85 ? '제46조 제3항' : '제46조 제1항';
   const checks: Check[] = [];
   const p = a.parent;
@@ -30,6 +32,7 @@ export function judgeElderly(a: ApplicantInput, n: NoticeInput, tables: readonly
   } else {
     checks.push(a.householdHead === true ? chk('세대주', article, 'ok')
       : a.householdHead == null ? chk('세대주', article, 'check', '세대주인지 확인하세요')
+      : maybe85 ? chk('세대주', article, 'check', '제18조 사업주체(공공)가 공급하는 전용 85㎡ 이하면 세대주가 아니어도 됨(같은 조 제3항, 소득 120% 이하) — 공고문을 확인하세요')
       : chk('세대주', article, 'no', '무주택 세대주여야 함'));
   }
   checks.push(oneTimeCheck(a, 'elderly_parent'));

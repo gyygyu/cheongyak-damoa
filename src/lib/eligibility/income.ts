@@ -2,6 +2,8 @@
 // 주택공급규칙 제40조 ②: 태아를 포함한 가구원 수가 4명 이상이면 가구원수별 값(이하 같다) — 모든 유형 공통으로 쓴다.
 export interface IncomeTable {
   year: number;
+  /** 이 표를 쓰기 시작하는 공고일(YYYY-MM-DD). 그 전 공고는 표가 없는 것으로 본다 */
+  effectiveFrom?: string;
   source: string;
   upTo3: number;                  // 3명 이하
   bySize: Record<string, number>; // "4" ~ "8"
@@ -23,9 +25,11 @@ export function withinIncome(t: IncomeTable, size: number, percent: number, inco
   return income * 100 <= base * percent;
 }
 
-/** 공고일이 속한 해의 표. 없으면 null(소득 요건은 '확인 필요') */
+/** 공고일이 속한 해의 표(적용 시작일 이후 공고만). 없으면 null(소득 요건은 '확인 필요') */
 export function incomeTableFor(tables: readonly IncomeTable[], noticeDate: string | null): IncomeTable | null {
   if (!noticeDate) return null;
   const year = Number(noticeDate.slice(0, 4));
-  return tables.find((t) => t.year === year) ?? null;
+  const t = tables.find((x) => x.year === year);
+  if (!t || (t.effectiveFrom != null && noticeDate < t.effectiveFrom)) return null;
+  return t;
 }

@@ -1,5 +1,5 @@
 // 제35조의3 신생아 특별공급 — ① 국민(제27조 ① 1순위, 소득 130%), ③ 민영 85㎡ 이하(제28조 ① 1순위, 소득 160%).
-import { chk, homelessCheck, incomeCheck, oneTimeCheck, rank1Check, under2 } from './common';
+import { chk, homelessCheck, incomeCheck, oneTimeCheck, privateAreaCheck, rank1Check, under2 } from './common';
 import { incomeTableFor, type IncomeTable } from './income';
 import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeResult } from './types';
 
@@ -17,7 +17,8 @@ export function judgeNewborn(a: ApplicantInput, n: NoticeInput, tables: readonly
   const national = n.supplyKind === 'national';
   const article = national ? '제35조의3 제1항' : '제35조의3 제3항';
   const checks: Check[] = [];
-  if (!national && n.areaExcl > 85) checks.push(chk('전용 85㎡ 이하', article, 'no', '민영주택 신생아 특별공급은 전용 85㎡ 이하만'));
+  const area = privateAreaCheck(n, article, '신생아');
+  if (area) checks.push(area);
   checks.push(under2Check(a, n, article));
   checks.push(rank1Check(n));
   checks.push(homelessCheck(a, 'newborn', article));

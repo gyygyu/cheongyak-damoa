@@ -6,7 +6,7 @@ export type Verdict = 'ok' | 'no' | 'check'; // 가능 | 불가 | 확인 필요
 /** 공고 쪽 값 — 공개 데이터라 단지 상세에서 미리 채울 수 있다 */
 export interface NoticeInput {
   supplyKind: SupplyKind;
-  areaExcl: number;              // 전용면적 ㎡
+  areaExcl: number | null;              // 전용면적 ㎡
   noticeDate: string | null;     // 입주자모집공고일
   publicBuilder: boolean | null; // 제18조 사업주체(국가·지자체·LH·지방공사 등) 공급인가, 모르면 null
 }

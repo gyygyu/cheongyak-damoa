@@ -19,13 +19,13 @@ function minorsCheck(a: ApplicantInput, n: NoticeInput): Check {
 }
 
 export function judgeMultichild(a: ApplicantInput, n: NoticeInput, tables: readonly IncomeTable[]): TypeResult {
-  const smallArea = n.areaExcl <= 85;
-  const article = n.publicBuilder === true && smallArea ? '제40조 제2항' : '제40조 제1항';
+  const smallArea = n.areaExcl == null ? null : n.areaExcl <= 85; // null = 면적 모름
+  const article = n.publicBuilder === true && smallArea === true ? '제40조 제2항' : '제40조 제1항';
   const checks: Check[] = [minorsCheck(a, n), homelessCheck(a, 'multichild', article), savingsCheck(a, n)];
-  if (smallArea && n.publicBuilder !== false) {
+  if (smallArea !== false && n.publicBuilder !== false) {
     const c = incomeCheck(a, incomeTableFor(tables, n.noticeDate), { percent: 120, altProperty: false, article: '제40조 제2항' });
-    checks.push(n.publicBuilder == null && c.verdict === 'no'
-      ? chk(c.label, c.article, 'check', '제18조 사업주체(공공) 공급이면 소득 120% 이하여야 함 — 공고문을 확인하세요')
+    checks.push((n.publicBuilder == null || smallArea == null) && c.verdict === 'no'
+      ? chk(c.label, c.article, 'check', '제18조 사업주체(공공)가 공급하는 전용 85㎡ 이하면 소득 120% 이하여야 함 — 공고문을 확인하세요')
       : c);
   }
   checks.push(oneTimeCheck(a, 'multichild'));
