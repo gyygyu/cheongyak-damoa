@@ -1,0 +1,7 @@
+.env
+.claude/
+node_modules/
+dist/
+.wrangler/
+.astro/
+.superpowers/
