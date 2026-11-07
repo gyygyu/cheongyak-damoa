@@ -11,6 +11,7 @@
     "typecheck": "astro check && tsc --noEmit -p tsconfig.sync.json",
     "cf-typegen": "wrangler types",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "sync": "node --env-file-if-exists=.env --import tsx sync/main.ts",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "survey": "node --env-file-if-exists=.env --import tsx sync/survey.ts",
     "lawd:snapshot": "node --env-file-if-exists=.env --import tsx sync/lawd-snapshot.ts"

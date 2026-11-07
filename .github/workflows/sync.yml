@@ -1,0 +1,35 @@
+# 하루 2회 동기화 (KST 04:00·16:00). 저장소 변수 SYNC_ENABLED=true 일 때만 돈다 (배포 전에는 꺼 둠)
+name: sync
+on:
+  schedule:
+    - cron: '0 19 * * *'
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: vars.SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run sync -- --target remote
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: 3회 연속 실패 알림
+        if: always() && hashFiles('sync/.out/alerts.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title "동기화 3회 연속 실패 $(date -u +%F)" --body-file sync/.out/alerts.json
