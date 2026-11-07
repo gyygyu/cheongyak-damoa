@@ -8,11 +8,11 @@ export interface AptNoticeLoc { pblancNo: string; lawdCd: string | null; noticeD
 
 const MAX_DAYS = 3;
 
-export function matchLh(lh: LhNoticeLoc, notices: AptNoticeLoc[]): string | null {
+export function matchLh(lh: LhNoticeLoc, notices: AptNoticeLoc[], cityOf: ReadonlyMap<string, string>): string | null {
   if (lh.kind !== 'sale' || !lh.lawdCd || !lh.noticeDate) return null;
   const name = normalizeComplexName(lh.name);
   const hits = notices.filter((n) =>
-    sameSigungu(n.lawdCd, lh.lawdCd) && n.noticeDate &&
+    sameSigungu(n.lawdCd, lh.lawdCd, cityOf) && n.noticeDate &&
     Math.abs(daysBetween(n.noticeDate, lh.noticeDate!)) <= MAX_DAYS &&
     normalizeComplexName(n.name) === name);
   return hits.length === 1 ? hits[0].pblancNo : null;

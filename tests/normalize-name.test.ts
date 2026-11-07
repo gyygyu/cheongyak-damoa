@@ -15,4 +15,9 @@ describe('normalizeComplexName', () => {
     expect(normalizeComplexName('푸르지오 1차')).not.toBe(normalizeComplexName('푸르지오 2차'));
     expect(normalizeComplexName('LH 1단지')).not.toBe(normalizeComplexName('LH 2단지'));
   });
+  it('숫자 사이 하이픈은 남겨 다른 단지를 합치지 않는다', () => {
+    expect(normalizeComplexName('행복마을 1-2단지')).not.toBe(normalizeComplexName('행복마을 12단지'));
+    expect(normalizeComplexName('A-62블록')).not.toBe(normalizeComplexName('A6-2블록'));
+    expect(normalizeComplexName('화성동탄2 A-62블록')).toBe(normalizeComplexName('화성동탄2 A62블록'));
+  });
 });

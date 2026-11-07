@@ -60,15 +60,15 @@ describe('resolveAddress', () => {
 });
 
 describe('sameSigungu', () => {
-  it('같은 코드, 또는 구가 있는 시(끝자리 0)와 그 시의 구는 같은 곳으로 본다', () => {
-    expect(sameSigungu('41597', '41597')).toBe(true);
-    expect(sameSigungu('41590', '41597')).toBe(true);
-    expect(sameSigungu('41593', '41590')).toBe(true);
+  it('같은 코드, 또는 구가 있는 시와 그 시의 구는 같은 곳으로 본다', () => {
+    expect(sameSigungu('41597', '41597', idx.cityOf)).toBe(true);
+    expect(sameSigungu('41590', '41597', idx.cityOf)).toBe(true);
+    expect(sameSigungu('41593', '41590', idx.cityOf)).toBe(true);
   });
   it('같은 시의 다른 구, 다른 시군구, 빈 값은 다른 곳', () => {
-    expect(sameSigungu('41593', '41597')).toBe(false);
-    expect(sameSigungu('41590', '41610')).toBe(false);
-    expect(sameSigungu('11680', '11650')).toBe(false);
-    expect(sameSigungu(null, '41590')).toBe(false);
+    expect(sameSigungu('41593', '41597', idx.cityOf)).toBe(false);
+    expect(sameSigungu('41590', '41610', idx.cityOf)).toBe(false);
+    expect(sameSigungu('11680', '11650', idx.cityOf)).toBe(false);
+    expect(sameSigungu(null, '41590', idx.cityOf)).toBe(false);
   });
 });

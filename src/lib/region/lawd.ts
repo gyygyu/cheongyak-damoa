@@ -14,15 +14,18 @@ export interface LawdIndex {
   byName: Map<string, string>; // 전체 이름 → 코드
   alias: Map<string, string>; // 구를 뺀 이름(경기도 화성시 봉담읍) → 코드. 두 구에 걸치면 빠짐
   nameOf: Map<string, string>; // 코드 → 전체 이름
+  cityOf: Map<string, string>; // 구 시군구 5자리 → 그 구가 속한 시 5자리 (수원 영통구 41117 → 41110)
   maxWords: number;
 }
 
 // 공고 주소에 섞여 오는 시도 약칭·옛 이름 → 현재 이름
-const SIDO_ALIAS: Record<string, string> = {
-  서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시',
+// 2026년 광주·전남은 전남광주통합특별시(12)로 합쳐졌다 — 별칭 대상은 tests/region-lawd-real.test.ts 가 실제 표로 확인
+export const SIDO_ALIAS: Record<string, string> = {
+  서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시',
+  광주: '전남광주통합특별시', 광주광역시: '전남광주통합특별시', 전남: '전남광주통합특별시', 전라남도: '전남광주통합특별시',
   대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시', 세종시: '세종특별자치시', 경기: '경기도',
   강원: '강원특별자치도', 강원도: '강원특별자치도', 충북: '충청북도', 충남: '충청남도',
-  전북: '전북특별자치도', 전라북도: '전북특별자치도', 전남: '전라남도', 경북: '경상북도', 경남: '경상남도',
+  전북: '전북특별자치도', 전라북도: '전북특별자치도', 경북: '경상북도', 경남: '경상남도',
   제주: '제주특별자치도', 제주도: '제주특별자치도',
 };
 
@@ -44,6 +47,7 @@ export function buildLawdIndex(table: LawdTable): LawdIndex {
 
   // 구가 있는 시(수원·화성 등): "시도 시 구 동" 을 "시도 시 동" 으로도 찾는다
   const alias = new Map<string, string>();
+  const cityOf = new Map<string, string>();
   const clash = new Set<string>();
   for (const [code, name] of nameOf) {
     if (!isSigunguCode(code)) continue;
@@ -52,6 +56,7 @@ export function buildLawdIndex(table: LawdTable): LawdIndex {
     const city = words.slice(0, 2).join(' ');
     const cityCode = byName.get(city);
     if (!cityCode || !isSigunguCode(cityCode) || cityCode === code) continue;
+    cityOf.set(code.slice(0, 5), cityCode.slice(0, 5));
     for (const [c, n] of nameOf) {
       if (c === code || !n.startsWith(`${name} `)) continue;
       const short = `${city} ${n.slice(name.length + 1)}`;
@@ -61,7 +66,7 @@ export function buildLawdIndex(table: LawdTable): LawdIndex {
     }
   }
   for (const k of clash) alias.delete(k);
-  return { byName, alias, nameOf, maxWords };
+  return { byName, alias, nameOf, cityOf, maxWords };
 }
 
 export function resolveAddress(index: LawdIndex, address: string): ResolvedAddress | null {
@@ -87,10 +92,10 @@ export function resolveAddress(index: LawdIndex, address: string): ResolvedAddre
   return { lawdCd: sigCode.slice(0, 5), code: best.code, sido, sigungu, dong, rest: words.slice(best.n).join(' ') };
 }
 
-// 시군구 5자리가 같은 곳인가. 구가 있는 시(끝자리 0, 예 화성 41590)는 그 시의 구(41593·41597)와 같은 곳으로 본다
-// — 주소에 구를 적었는지에 따라 해석 정밀도가 달라지기 때문(두 구에 걸치면 시 단위로 남음)
-export function sameSigungu(a: string | null, b: string | null): boolean {
+// 시군구 5자리가 같은 곳인가. 구가 있는 시(화성 41590)는 그 시의 구(41593·41597)와 같은 곳으로 본다
+// — 주소에 구를 적었는지에 따라 해석 정밀도가 달라지기 때문(두 구에 걸치면 시 단위로 남음).
+// 시·구 관계는 표에서 만든 cityOf(LawdIndex.cityOf)로만 판단한다 — 코드 끝자리로 짐작하면 영동군·증평군처럼 이웃 군이 섞인다
+export function sameSigungu(a: string | null, b: string | null, cityOf: ReadonlyMap<string, string>): boolean {
   if (!a || !b) return false;
-  if (a === b) return true;
-  return a.slice(0, 4) === b.slice(0, 4) && (a.endsWith('0') || b.endsWith('0'));
+  return a === b || cityOf.get(a) === b || cityOf.get(b) === a;
 }

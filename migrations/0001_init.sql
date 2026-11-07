@@ -146,7 +146,8 @@ CREATE TABLE lh_supply (
 CREATE TABLE account_stats (
   base_month TEXT NOT NULL,         -- YYYY-MM (DELNG_OCCRRNC_YM)
   region TEXT NOT NULL, account_kind TEXT NOT NULL, -- 지역명·통장 종류명
+  area_kind TEXT NOT NULL DEFAULT '', -- 면적 구분 BLNC_SECD (01 85㎡ 이하 … 04 모든면적, 부금 등 없으면 '')
   subscribers INTEGER, rank1 INTEGER, rank2 INTEGER,
   hash TEXT NOT NULL, updated_at TEXT NOT NULL,
-  PRIMARY KEY (base_month, region, account_kind)
+  PRIMARY KEY (base_month, region, account_kind, area_kind)
 );

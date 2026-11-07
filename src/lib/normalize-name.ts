@@ -7,6 +7,8 @@ export function normalizeComplexName(name: string): string {
     .normalize('NFKC')
     .toLowerCase()
     .replace(/아파트/g, '')
+    .replace(/(\d)\s*-\s*(?=\d)/g, '$1#') // 숫자 사이 하이픈(1-2단지·A6-2블록)은 구분 문자로 남긴다
     .replace(/[\s()[\]{}<>·.,'"_\-]/g, '')
+    .replace(/#/g, '-')
     .replace(/제?(\d+)차/g, '$1');
 }

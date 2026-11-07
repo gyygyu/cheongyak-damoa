@@ -7,7 +7,7 @@ export interface PresaleTradeLoc { sggCd: string; dong: string; jibun: string; n
 export interface NoticeLoc { pblancNo: string; lawdCd: string | null; dong: string | null; jibun: Jibun | null; name: string }
 export type PresaleMatch = { pblancNo: string | null; method: 'jibun' | 'name' | 'none' };
 
-export function matchPresale(trade: PresaleTradeLoc, notices: NoticeLoc[]): PresaleMatch {
+export function matchPresale(trade: PresaleTradeLoc, notices: NoticeLoc[], cityOf: ReadonlyMap<string, string>): PresaleMatch {
   const sameSgg = notices.filter((n) => n.lawdCd === trade.sggCd);
   const j = parseJibun(trade.jibun);
   if (j) {
@@ -17,7 +17,7 @@ export function matchPresale(trade: PresaleTradeLoc, notices: NoticeLoc[]): Pres
   }
   // 이름은 시 단위로만 해석된 공고(화성 41590)도 그 시의 구 거래와 맞춘다 (sameSigungu)
   const name = normalizeComplexName(trade.name);
-  const byName = notices.filter((n) => sameSigungu(n.lawdCd, trade.sggCd)).filter((n) => normalizeComplexName(n.name) === name);
+  const byName = notices.filter((n) => sameSigungu(n.lawdCd, trade.sggCd, cityOf)).filter((n) => normalizeComplexName(n.name) === name);
   if (byName.length === 1) return { pblancNo: byName[0].pblancNo, method: 'name' };
   return { pblancNo: null, method: 'none' };
 }

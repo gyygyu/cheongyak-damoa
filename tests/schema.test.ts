@@ -41,4 +41,10 @@ describe('0001_init.sql', () => {
     ins.run('01'); ins.run('05');
     expect(() => ins.run('01')).toThrow();
   });
+  it('청약통장 통계는 면적 구분(BLNC_SECD)별로 따로 쌓인다', () => {
+    const d = db();
+    const ins = d.prepare("INSERT INTO account_stats (base_month, region, account_kind, area_kind, hash, updated_at) VALUES ('2026-09','서울','청약예금',?,'h','t')");
+    ins.run('01'); ins.run('04'); ins.run('');
+    expect(() => ins.run('01')).toThrow();
+  });
 });
