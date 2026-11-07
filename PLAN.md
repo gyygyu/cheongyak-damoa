@@ -33,10 +33,12 @@
 - [ ] plan-a-foundation·plan-b-special-supply·plan-c-sync 브랜치 main 병합 (사용자 확인 필요)
 
 ## 4. 진행률
-완료 13 / 전체 15 (마지막 갱신 2026-11-07)
+완료 13 / 전체 15 (마지막 갱신 2026-11-07, Plan D 2/9)
 
 ## 5. 다음에 할 작업
-- Plan D(화면·docs/deploy.md·ops) 계획 작성 → 실행. 화면은 KV 묶음 키(home·apt:·lh:·calendar:·competition·region:·trade:·stats:account)를 읽는다
+- Plan D 실행 중(브랜치 plan-d-screens): 계획 docs/superpowers/plans/2026-11-07-cheongyak-screens.md. Task 1(공용 틀, e544e13)·Task 2(표시 형식, d4b6c85) 완료 — 전체 시험 313 통과. **다음은 Task 3(홈·캘린더)**: `task-start <계획> 3` 으로 브리프를 받아 Task별 구현 에이전트에 맡긴다(원장 .superpowers/sdd/2026-11-07-cheongyak-screens/progress.md). Task 9까지 끝나면 opus 최종 리뷰 → 수정 한 번
+  - task-done 스크립트가 vitest 결과 줄을 잘못 적음 → 원장 줄을 실제 'N files, M passed'로 고친다
+  - CSS는 지원금다모아 복사 후 강조색 3줄만 바꿈 — 옛 녹색 rgba 잔존 여부 미확인
 - 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음
 - Plan C 실키 첫 수집 때 확인: 실거래 LAWD_CD 가 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
 
