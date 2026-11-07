@@ -1,0 +1,15 @@
+---
+import { SOURCE_LABEL, PAGE_NOTICE, type SourceKey } from '../lib/view/sources';
+import { SITE } from '../lib/site-meta';
+interface Props { sources: SourceKey[] }
+const { sources } = Astro.props;
+---
+<footer class="site-footer">
+  <div class="inner">
+    <p class="page-notice">{PAGE_NOTICE}</p>
+    {sources.length > 0 && (
+      <p class="page-notice">출처: <span data-sources={sources.join(',')}>{sources.map((k) => SOURCE_LABEL[k]).join(' · ')}</span></p>
+    )}
+    <p class="page-notice">{SITE.name}는 청약홈·한국토지주택공사·국토교통부가 운영하는 사이트가 아닙니다.</p>
+  </div>
+</footer>

@@ -1,0 +1,15 @@
+---
+import { NAV_ITEMS, navActive } from '../lib/nav';
+import { SITE } from '../lib/site-meta';
+const path = Astro.url.pathname;
+---
+<header class="site-header">
+  <div class="inner">
+    <a class="logo" href="/">{SITE.name}</a>
+    <nav class="nav" aria-label="주 메뉴">
+      {NAV_ITEMS.map((item) => (
+        <a href={item.href} aria-current={navActive(path, item.href) ? 'page' : undefined}>{item.label}</a>
+      ))}
+    </nav>
+  </div>
+</header>

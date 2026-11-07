@@ -1,5 +1,8 @@
 ---
+import Base from '../layouts/Base.astro';
 import { SITE } from '../lib/site-meta';
 ---
-<html lang="ko"><head><meta charset="utf-8" /><title>{SITE.name}</title></head>
-<body><h1>{SITE.name}</h1><p>{SITE.tagline}</p></body></html>
+<Base title={SITE.name} description={SITE.tagline} sources={['applyhome']}>
+  <h1>{SITE.name}</h1>
+  <p>{SITE.tagline}</p>
+</Base>

@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TabBar from '../components/TabBar.astro';
+import { env } from 'cloudflare:workers';
+import { SITE } from '../lib/site-meta';
+import type { SourceKey } from '../lib/view/sources';
+
+interface Props { title: string; description: string; sources: SourceKey[]; noindex?: boolean; canonicalPath?: string }
+const { title, description, sources, noindex = false, canonicalPath } = Astro.props;
+const fullTitle = title === SITE.name ? title : `${title} | ${SITE.name}`;
+const canonical = new URL(canonicalPath ?? Astro.url.pathname, env.SITE_URL).toString();
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="theme-color" content="#2557a7" />
+  </head>
+  <body>
+    <Header />
+    <main class="container"><slot /></main>
+    <Footer sources={sources} />
+    <TabBar />
+    <script>import '../scripts/sources-client';</script>
+  </body>
+</html>

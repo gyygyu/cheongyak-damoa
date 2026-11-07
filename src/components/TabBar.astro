@@ -1,0 +1,9 @@
+---
+import { NAV_ITEMS, navActive } from '../lib/nav';
+const path = Astro.url.pathname;
+---
+<nav class="tabbar" aria-label="하단 탭">
+  {NAV_ITEMS.map((item) => (
+    <a href={item.href} aria-current={navActive(path, item.href) ? 'page' : undefined}><span>{item.label}</span></a>
+  ))}
+</nav>

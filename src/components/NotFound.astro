@@ -1,0 +1,9 @@
+---
+interface Props { message?: string }
+const { message = '찾는 화면이 없습니다.' } = Astro.props;
+---
+<section>
+  <h1>찾는 화면이 없습니다</h1>
+  <p>{message}</p>
+  <p><a class="btn btn--ghost" href="/">홈으로</a> <a class="btn btn--ghost" href="/calendar">캘린더</a></p>
+</section>
