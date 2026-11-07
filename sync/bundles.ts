@@ -58,16 +58,23 @@ export function scheduleOf(r: DbRow): AptSchedule {
 
 const stateOf = (v: unknown): 'normal' | 'corrected' | 'cancelled' => (v === 'corrected' || v === 'cancelled' ? v : 'normal');
 
-export function fitValue(obj: Record<string, unknown>, listKey: string): string {
+// 목록(listKeys 순서대로)을 뒤에서부터 덜어 50KB 안에 맞춘다
+export function fitValue(obj: Record<string, unknown>, listKeys: string | string[]): string {
+  const keys = typeof listKeys === 'string' ? [listKeys] : listKeys;
   let json = JSON.stringify(obj);
   if (bytes(json) < MAX_VALUE_BYTES) return json;
-  const list = [...((obj[listKey] as unknown[] | undefined) ?? [])];
-  while (list.length > 0) {
-    list.length = Math.min(list.length - 1, Math.floor(list.length * 0.9));
-    json = JSON.stringify({ ...obj, [listKey]: list, truncated: true });
-    if (bytes(json) < MAX_VALUE_BYTES) return json;
+  const cur: Record<string, unknown> = { ...obj, truncated: true };
+  for (const k of keys) {
+    const list = [...((obj[k] as unknown[] | undefined) ?? [])];
+    while (list.length > 0) {
+      list.length = Math.min(list.length - 1, Math.floor(list.length * 0.9));
+      cur[k] = list;
+      json = JSON.stringify(cur);
+      if (bytes(json) < MAX_VALUE_BYTES) return json;
+    }
+    cur[k] = [];
   }
-  throw new Error(`KV 값이 50KB 를 넘음 (${listKey} 를 다 덜어도)`);
+  throw new Error(`KV 값이 50KB 를 넘음 (${keys.join(',')} 를 다 덜어도)`);
 }
 
 const toTradeRecord = (r: DbRow): TradeRecord => ({
@@ -106,10 +113,17 @@ function sidoOfRegion(region: string): string {
   return SIDO_ALIAS[w] ?? w;
 }
 
-export function buildBundles(ds: Dataset, ctx: BundleCtx): KvWrite[] {
+// skipped: 50KB 에 못 맞춘 키 — 그 키만 건너뛰고 나머지 묶음은 만든다
+export function buildBundles(ds: Dataset, ctx: BundleCtx, skipped: string[] = []): KvWrite[] {
   const { today, cityOf } = ctx;
   const out: KvWrite[] = [];
-  const put = (key: string, obj: Record<string, unknown>, listKey: string) => out.push({ key, value: fitValue(obj, listKey) });
+  const put = (key: string, obj: Record<string, unknown>, listKey: string | string[]) => {
+    try {
+      out.push({ key, value: fitValue(obj, listKey) });
+    } catch {
+      skipped.push(key);
+    }
+  };
 
   const tradeFrom = addMonths(today, -12);
   const recentTrades = ds.trades.filter((r) => (s(r.contract_date) ?? '') >= tradeFrom && (s(r.contract_date) ?? '') <= today);
@@ -146,7 +160,7 @@ export function buildBundles(ds: Dataset, ctx: BundleCtx): KvWrite[] {
       special: (specialBy.get(no) ?? []).map(strip),
       lhLinks: (lhBy.get(no) ?? []).map((l) => ({ lhId: s(l.lh_id), title: s(l.title), url: s(l.url) })),
       presale,
-    }, 'presale');
+    }, ['presale', 'special', 'competition']);
   }
 
   // lh:{ID} — 청약홈 공고와 못 맞춘 LH 공고
@@ -202,7 +216,7 @@ export function buildBundles(ds: Dataset, ctx: BundleCtx): KvWrite[] {
         last: rows.reduce((m, r) => ((s(r.contract_date) ?? '') > m ? (s(r.contract_date) ?? '') : m), ''),
       })),
     ).sort((a, b) => b.count - a.count || a.dong.localeCompare(b.dong));
-    put(`region:${key}`, { notices: list.map(noticeSummary), dongs }, 'dongs');
+    put(`region:${key}`, { notices: list.map(noticeSummary), dongs }, ['dongs', 'notices']);
   }
 
   // trade:{시군구코드}:{법정동}
@@ -221,7 +235,8 @@ export function buildBundles(ds: Dataset, ctx: BundleCtx): KvWrite[] {
   return out;
 }
 
-export interface KvManifest { date: string; used: number; hashes: Record<string, string> }
+// date·used: Cloudflare 하루 한도(UTC 0시 초기화) 누적 / pending: 지난 실행에 미룬 키 (다음 실행이 다시 만든다)
+export interface KvManifest { date: string; used: number; hashes: Record<string, string>; pending?: string[] }
 
 export function selectKvWrites(
   writes: KvWrite[],
@@ -238,8 +253,7 @@ export function selectKvWrites(
   const put: KvWrite[] = [];
   const deferred: string[] = [];
   for (const { w, h } of ordered) {
-    const isTrade = w.key.startsWith('trade:');
-    const fits = put.length + reserve < budget && (!isTrade || used + put.length + 1 + reserve < dailyCap);
+    const fits = put.length + reserve < budget && used + put.length + 1 + reserve < dailyCap;
     if (!fits) {
       deferred.push(w.key);
       continue;
@@ -247,5 +261,5 @@ export function selectKvWrites(
     put.push(w);
     hashes[w.key] = h;
   }
-  return { put, deferred, manifest: { date: opts.today, used: used + put.length + reserve, hashes } };
+  return { put, deferred, manifest: { date: opts.today, used: used + put.length + reserve, hashes, pending: deferred } };
 }

@@ -33,6 +33,9 @@ export const TABLES: Record<string, string[]> = {
 const SOURCES = ['applyhome', 'competition', 'lh', 'trade', 'account'] as const;
 type SourceName = (typeof SOURCES)[number];
 const ROW_CAP = 70_000;
+// D1 은 인덱스마다 행 쓰기를 따로 센다: 1 + 인덱스 수 (migrations/0001_init.sql)
+const WRITE_WEIGHT: Record<string, number> = { trade: 3, apt_notice: 3, presale_trade: 2, presale_link: 2, lh_notice: 2 };
+interface DayCount { date: string; used: number }
 const BACKFILL_PER_RUN = 60;
 const TRADE_EMPTY_MIN_JOBS = 10;
 
@@ -55,14 +58,24 @@ export async function runSync(o: SyncOptions): Promise<SyncReport> {
   const metas = parse<Record<string, SourceMeta>>(await store.kvGet('meta:sources')) ?? {};
   const report: SyncReport = { sources: {} as SyncReport['sources'], rowsWritten: 0, kvPut: 0, kvDeferred: 0, alerts: [] };
   const changedLawds = new Set<string>();
+  // D1·KV 하루 한도는 UTC 0시에 초기화된다
+  const utcDay = now.slice(0, 10);
+  const d1Prev = parse<DayCount>(await store.kvGet('meta:d1rows'));
+  let d1Used = d1Prev?.date === utcDay ? d1Prev.used : 0;
+  const truncated = new Set<string>();
 
   async function apply(table: string, rows: DbRow[], where = ''): Promise<void> {
     const keyCols = TABLES[table];
     const hashed = rows.map((r) => withHash(r as Row, now));
     const prev = new Map((await store.query<{ k: string; hash: string }>(`${hashQuerySql(table, keyCols)}${where}`)).map((r) => [r.k, r.hash]));
     let changed = diffRows(hashed, keyBy(keyCols), prev);
-    const room = Math.max(0, ROW_CAP - report.rowsWritten);
-    if (changed.length > room) changed = changed.slice(0, room);
+    const w = WRITE_WEIGHT[table] ?? 1;
+    const room = Math.max(0, Math.floor((ROW_CAP - d1Used) / w));
+    if (changed.length > room) {
+      changed = changed.slice(0, room);
+      truncated.add(table);
+    }
+    d1Used += changed.length * w;
     if (table === 'trade') for (const r of changed) changedLawds.add(String(r.lawd_cd));
     await store.exec(upsertSql(table, keyCols, changed));
     report.rowsWritten += changed.length;
@@ -146,7 +159,8 @@ export async function runSync(o: SyncOptions): Promise<SyncReport> {
       return { trade_key: p.trade_key, pblanc_no: m.pblancNo, method: m.method };
     });
     await apply('presale_link', links);
-    backfillNext = bf.state;
+    // 하루 상한에 걸려 잘렸으면 백필 위치를 옮기지 않는다 (다음 실행이 같은 구간을 다시)
+    if (!truncated.has('trade')) backfillNext = bf.state;
     return r.trades.length + r.presale.length;
   });
 
@@ -158,10 +172,13 @@ export async function runSync(o: SyncOptions): Promise<SyncReport> {
   });
 
   // 묶음: D1 에서 다시 읽는다 (실패한 출처는 직전 값)
+  const prevManifest = parse<KvManifest>(await store.kvGet('meta:kvhash'));
   const from = addMonths(today, -12);
   const notices = await store.query<DbRow>(`SELECT * FROM apt_notice WHERE notice_date >= '${from}' OR notice_date IS NULL`);
   const inNotices = `pblanc_no IN (SELECT pblanc_no FROM apt_notice WHERE notice_date >= '${from}' OR notice_date IS NULL)`;
   const scope = new Set<string>(changedLawds);
+  // 지난 실행에 미룬 trade 묶음은 행이 안 바뀌어도 다시 만든다
+  for (const k of prevManifest?.pending ?? []) if (k.startsWith('trade:')) scope.add(k.split(':')[1]);
   for (const n of notices) {
     const l = str(n.lawd_cd);
     if (!l) continue;
@@ -183,14 +200,16 @@ export async function runSync(o: SyncOptions): Promise<SyncReport> {
     lhSupply: await store.query<DbRow>(`SELECT * FROM lh_supply WHERE lh_id IN (SELECT lh_id FROM lh_notice WHERE posted_date >= '${from}' OR posted_date IS NULL)`),
     account: await store.query<DbRow>('SELECT * FROM account_stats'),
   };
-  const bundles = buildBundles(ds, { today, cityOf: idx.cityOf });
-  const prevManifest = parse<KvManifest>(await store.kvGet('meta:kvhash'));
-  const sel = selectKvWrites(bundles, prevManifest, { today });
+  const skipped: string[] = [];
+  const bundles = buildBundles(ds, { today, cityOf: idx.cityOf }, skipped);
+  for (const k of skipped) report.alerts.push(`${k}: 50KB 에 맞출 수 없어 건너뜀`);
+  const sel = selectKvWrites(bundles, prevManifest, { today: utcDay, reserve: 4 });
   await store.kvPut([
     ...sel.put,
     { key: 'meta:sources', value: JSON.stringify(metas) },
     { key: 'backfill:trade', value: JSON.stringify(backfillNext ?? { base: '', index: 0 }) },
     { key: 'meta:kvhash', value: JSON.stringify(sel.manifest) },
+    { key: 'meta:d1rows', value: JSON.stringify({ date: utcDay, used: d1Used }) },
   ]);
   report.kvPut = sel.put.length;
   report.kvDeferred = sel.deferred.length;

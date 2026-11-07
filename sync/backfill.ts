@@ -20,7 +20,10 @@ export function sigunguCodes(table: LawdTable): string[] {
 }
 
 export function nextBackfill(state: BackfillState | null, lawds: string[], today: string, max: number): { jobs: TradeJob[]; state: BackfillState; done: boolean } {
-  const base = state?.base ?? ymOf(addMonths(today, -1));
+  const current = ymOf(addMonths(today, -1));
+  // 한 바퀴를 다 돌았고 기준월이 지났으면 새 기준월로 처음부터 (매달 새로 신고된 거래를 채운다)
+  if (state && state.base !== current && state.index >= BACKFILL_MONTHS * lawds.length) state = { base: current, index: 0 };
+  const base = state?.base ?? current;
   const baseDate = `${base.slice(0, 4)}-${base.slice(4)}-01`;
   const months = Array.from({ length: BACKFILL_MONTHS }, (_, i) => ymOf(addMonths(baseDate, -i)));
   const all = months.flatMap((ym) => lawds.map((lawd) => ({ lawd, ym })));

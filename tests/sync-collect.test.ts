@@ -90,7 +90,8 @@ describe('백필', () => {
     expect(b.jobs).toHaveLength(32);
     expect(b.jobs.at(-1)).toEqual({ lawd: '11680', ym: '202511' });
     expect(b.done).toBe(true);
-    expect(nextBackfill(b.state, lawds, '2026-12-20', 100).jobs).toEqual([]);
+    // 같은 기준월이면 끝난 채로 (기준월이 지나면 새로 돈다 — sync-review-fixes 시험)
+    expect(nextBackfill(b.state, lawds, '2026-11-30', 100).jobs).toEqual([]);
   });
 
   it('최근 두 달', () => {
