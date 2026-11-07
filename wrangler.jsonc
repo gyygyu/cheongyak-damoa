@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cheongyak-damoa",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // 로컬 개발용 자리값 — 배포 전에 실제 ID로 바꾼다 (docs/deploy.md)
+  "d1_databases": [
+    { "binding": "DB", "database_name": "cheongyak-damoa", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+  ],
+  "kv_namespaces": [
+    { "binding": "KV", "id": "00000000000000000000000000000000" }
+  ],
+  "vars": { "SITE_URL": "http://localhost:4321" }
+}

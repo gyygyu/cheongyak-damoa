@@ -5,3 +5,9 @@ dist/
 .wrangler/
 .astro/
 .superpowers/
+.env.*
+!.env.example
+.dev.vars
+*.log
+worker-configuration.d.ts
+sync/.out/
