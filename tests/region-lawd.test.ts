@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLawdIndex, resolveAddress, type LawdTable } from '../src/lib/region/lawd';
+import { buildLawdIndex, resolveAddress, sameSigungu, type LawdTable } from '../src/lib/region/lawd';
 
 // 실제 표(content/lawd/lawd.json, 2026-11-07)와 같은 모양: 화성시는 2026년 구 설치, 세종은 시도 행 없이 3611000000 만
 const TABLE: LawdTable = [
@@ -56,5 +56,19 @@ describe('resolveAddress', () => {
   it('시군구까지 못 잡으면 null', () => {
     expect(resolveAddress(idx, '경기도 어딘가')).toBeNull();
     expect(resolveAddress(idx, '')).toBeNull();
+  });
+});
+
+describe('sameSigungu', () => {
+  it('같은 코드, 또는 구가 있는 시(끝자리 0)와 그 시의 구는 같은 곳으로 본다', () => {
+    expect(sameSigungu('41597', '41597')).toBe(true);
+    expect(sameSigungu('41590', '41597')).toBe(true);
+    expect(sameSigungu('41593', '41590')).toBe(true);
+  });
+  it('같은 시의 다른 구, 다른 시군구, 빈 값은 다른 곳', () => {
+    expect(sameSigungu('41593', '41597')).toBe(false);
+    expect(sameSigungu('41590', '41610')).toBe(false);
+    expect(sameSigungu('11680', '11650')).toBe(false);
+    expect(sameSigungu(null, '41590')).toBe(false);
   });
 });

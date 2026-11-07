@@ -86,3 +86,11 @@ export function resolveAddress(index: LawdIndex, address: string): ResolvedAddre
   const dong = best.code === sigCode ? null : fullName.slice(sigName.length + 1);
   return { lawdCd: sigCode.slice(0, 5), code: best.code, sido, sigungu, dong, rest: words.slice(best.n).join(' ') };
 }
+
+// 시군구 5자리가 같은 곳인가. 구가 있는 시(끝자리 0, 예 화성 41590)는 그 시의 구(41593·41597)와 같은 곳으로 본다
+// — 주소에 구를 적었는지에 따라 해석 정밀도가 달라지기 때문(두 구에 걸치면 시 단위로 남음)
+export function sameSigungu(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return a.slice(0, 4) === b.slice(0, 4) && (a.endsWith('0') || b.endsWith('0'));
+}
