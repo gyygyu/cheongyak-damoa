@@ -4,7 +4,9 @@
 아파트 청약·공모주 일정과 실거래가 조회 사이트. 운영비 월 0원, 검색 유입 광고 수익.
 - 설계: `docs/superpowers/specs/2026-11-07-cheongyak-site-design.md`
 - Plan A 기반·순수 로직: `docs/superpowers/plans/2026-11-07-cheongyak-foundation.md`
-- 뒤이을 계획: Plan B 특공 판정 / Plan C 동기화 / Plan D 화면·배포 문서·ops
+- Plan B 특공 판정: `docs/superpowers/plans/2026-11-07-cheongyak-special-supply.md`
+- Plan C 동기화: `docs/superpowers/plans/2026-11-07-cheongyak-sync.md`
+- 뒤이을 계획: Plan D 화면·배포 문서·ops
 
 ## 2. 단계별 구현 계획
 1. Plan A: 골격(T1), API 조사·fixtures(T2), D1 스키마(T3), 지역(T4), 실거래(T5), 분양권 매칭(T6), 공고·LH(T7), 공모주(T8)
@@ -25,16 +27,16 @@
 - [x] A-T7 공고 상태·일정·LH 매칭
 - [x] A-T8 공모주 판·보호예수
 - [x] Plan A 최종 리뷰·수정 5건 (443dee6, 104/104)
-- [ ] Plan B 특공 판정
+- [x] Plan B 특공 판정 (최종 리뷰 수정 4건 b1970bd, 189/189)
 - [ ] Plan C 동기화
 - [ ] Plan D 화면·배포 문서·ops
-- [ ] plan-a-foundation 브랜치 main 병합 (사용자 확인 필요)
+- [ ] plan-a-foundation·plan-b-special-supply 브랜치 main 병합 (사용자 확인 필요)
 
 ## 4. 진행률
-완료 11 / 전체 15 (마지막 갱신 2026-11-07)
+완료 12 / 전체 15 (마지막 갱신 2026-11-07)
 
 ## 5. 다음에 할 작업
-- Plan B(특공 판정) 계획 작성 → 실행: 근거는 `docs/special-supply-rules.md`(조문 요약·2026 소득 기준표), `content/income-table/2026.json` 생성, 판정은 브라우저 전용(입력값 서버 전송 금지)
+- Plan C(동기화) 계획 작성 → 실행: 지원금다모아 `sync/`(sql·cloudflare·plan·artifacts) 패턴 복사, 출처별 파서·변환(fixtures), KV 묶음, 실거래 백필, 연속 3회 실패 이슈, Actions 워크플로
 - Plan C 실키 첫 수집 때 확인: 실거래 LAWD_CD 가 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
 
 ## 6. 결정 사항 · 막혔던 문제
@@ -47,3 +49,7 @@
 - Plan A 미뤄 둔 작은 것: '서울시' 줄임말·군위군 null, date.ts 끝 고정, 날짜 없는 공고 상태, lh_supply 반올림
 - 보호예수(주식발행정보)는 상업적 이용금지 — 매칭 로직·표만 두고 수집은 끔. 문의: 한국예탁결제원 증권정보부(portal@ksd.or.kr)
 - DART 신고서: 대괄호 머리말([기재정정]·[발행조건확정])은 모두 정정 이력, 외국법인 법인등록번호 0000000000000 은 매칭에 쓰지 않음
+- 특공 판정 입력은 judgeAll 진입점에서 정리: 잘못된 날짜('' 포함)·면적(NaN·0 이하)은 모름(null) → '확인 필요'. NoticeInput.areaExcl 은 number | null
+- 소득 기준표 `effectiveFrom`: 2026년 표 2026-07-01 **잠정** — 실제 적용일 운영자 확인 필요(틀리면 상반기 공고 소득이 '확인 필요')
+- Plan B 미뤄 둔 작은 것: 2/29 출생 기념일, 입력 날짜 > 공고일 검사, 특례 문구 위치(제46조 ③), 생애최초 기혼 자녀, 혼인일 null 미혼·모름 구분
+- Plan B 판정 근거 결정: 3년 부양 경계 포함, 제40조 ②·제46조 ③ 원문 Plan D 전 대조, 입양은 혼인 중 자녀로 봄, 가구원 수 ≥ 자녀 수는 화면에서 막음
