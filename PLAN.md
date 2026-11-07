@@ -28,15 +28,16 @@
 - [x] A-T8 공모주 판·보호예수
 - [x] Plan A 최종 리뷰·수정 5건 (443dee6, 104/104)
 - [x] Plan B 특공 판정 (최종 리뷰 수정 4건 b1970bd, 189/189)
-- [ ] Plan C 동기화
+- [x] Plan C 동기화 (plan-c-sync, 최종 리뷰 수정 6건 362a28d, 287/287)
 - [ ] Plan D 화면·배포 문서·ops
-- [ ] plan-a-foundation·plan-b-special-supply 브랜치 main 병합 (사용자 확인 필요)
+- [ ] plan-a-foundation·plan-b-special-supply·plan-c-sync 브랜치 main 병합 (사용자 확인 필요)
 
 ## 4. 진행률
-완료 12 / 전체 15 (마지막 갱신 2026-11-07)
+완료 13 / 전체 15 (마지막 갱신 2026-11-07)
 
 ## 5. 다음에 할 작업
-- Plan C(동기화) 계획 작성 → 실행: 지원금다모아 `sync/`(sql·cloudflare·plan·artifacts) 패턴 복사, 출처별 파서·변환(fixtures), KV 묶음, 실거래 백필, 연속 3회 실패 이슈, Actions 워크플로
+- Plan D(화면·docs/deploy.md·ops) 계획 작성 → 실행. 화면은 KV 묶음 키(home·apt:·lh:·calendar:·competition·region:·trade:·stats:account)를 읽는다
+- 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음
 - Plan C 실키 첫 수집 때 확인: 실거래 LAWD_CD 가 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
 
 ## 6. 결정 사항 · 막혔던 문제
@@ -52,4 +53,8 @@
 - 특공 판정 입력은 judgeAll 진입점에서 정리: 잘못된 날짜('' 포함)·면적(NaN·0 이하)은 모름(null) → '확인 필요'. NoticeInput.areaExcl 은 number | null
 - 소득 기준표 `effectiveFrom`: 2026년 표 2026-07-01 **잠정** — 실제 적용일 운영자 확인 필요(틀리면 상반기 공고 소득이 '확인 필요')
 - Plan B 미뤄 둔 작은 것: 2/29 출생 기념일, 입력 날짜 > 공고일 검사, 특례 문구 위치(제46조 ③), 생애최초 기혼 자녀, 혼인일 null 미혼·모름 구분
+- Plan C 결정: 백필 12개월(스펙 24개월) — 화면이 12개월만 쓰고 D1 쓰기 절반. D1 하루 쓰기는 KV meta:d1rows(UTC 날짜, 1+인덱스 수 가중), KV 미룬 키는 meta:kvhash.pending
+- Plan C 미뤄 둔 작은 것: 실행이 죽으면 alerts.json 없음, HOUSE_DTL_SECD 없으면 private, competition model_no 대체값 키 중복, 액션 SHA 고정, KV 일괄 쓰기 실패 시 trade 묶음 유실
+- Plan C 실키 첫 실행 때 확인: API 일일 호출 한도, odcloud cond 필터가 실서버에서 걸리는지
+- 로컬 D1 옛 판은 `.wrangler/state/v3/d1_old_20261107` 로 옮겨 둠(지워도 됨)
 - Plan B 판정 근거 결정: 3년 부양 경계 포함, 제40조 ②·제46조 ③ 원문 Plan D 전 대조, 입양은 혼인 중 자녀로 봄, 가구원 수 ≥ 자녀 수는 화면에서 막음
