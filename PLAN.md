@@ -41,7 +41,7 @@
 3. **사용자 확인 필요** 배포(`docs/deploy.md`):
    1. ~~1~3단계~~ 완료(2026-11-08): 새 계정(heegyu010@naver.com) 토큰·D1·KV, 원격 0001 적용(새 D1), 배포 https://cheongyak-damoa.heegyu010.workers.dev (`SITE_URL` 도 이 주소, `.env` 에도)
    2. ~~4단계~~ 완료(2026-11-08): 공개 저장소 gyygyu/cheongyak-damoa(지원금다모아와 같은 계정), Secrets 4개(DATA_GO_KR_KEY·CLOUDFLARE_API_TOKEN·CLOUDFLARE_ACCOUNT_ID·DART_API_KEY), 변수 `SYNC_ENABLED=true`. 로컬 git 은 `.git/config` credential.helper 가 `.env` 의 GH_TOKEN(이 저장소 전용 fine-grained, **2027-02-06 만료** — 그 전에 새로 발급해 `.env` 교체)을 읽음
-   3. ~~첫 동기화~~ 성공(2026-11-08, run 42471832541, 8분): applyhome 67·competition 26,662·lh 74·trade 21,425행. KV 568건은 하루 쓰기 한도로 다음 실행에 이어 씀. 청약통장 통계는 가입기간별 엔드포인트가 쪽 상한(20쪽)을 넘어 건너뜀 → 상한 80쪽으로 수정(최근 3개월 25,941행 실측). 다음 동기화에서 `/competition` 청약통장 표가 채워지는지 확인
+   3. ~~첫 동기화~~ 성공(2026-11-08, run 42471832541, 8분): applyhome 67·competition 26,662·lh 74·trade 21,425행. KV 568건은 하루 쓰기 한도로 다음 실행에 이어 씀. 청약통장 통계는 가입기간별 엔드포인트가 쪽 상한(20쪽)을 넘어 건너뜀 → 상한 80쪽으로 수정(최근 3개월 25,941행 실측). 수정 뒤 수동 실행(run 42472770814)에서 account 4,398행 수집 성공. 다만 첫 실행이 D1 하루 한도(`ROW_CAP` 7만, UTC 0시 초기화)를 다 써서 D1 0행 — 11-09 16시(UTC 07시) 정기 실행에서 써질 예정(04시 실행은 아직 UTC 11-08). 그 뒤 `/region/서울` 청약통장 표와 KV `stats:account` 가 비어 있지 않은지 확인
       - 확인 완료: 실거래 `LAWD_CD` 는 12xxx(전남광주통합특별시, 355건)이고 29xxx/46xxx 없음 / `BLNC_SECD` 02·03 라벨은 실데이터 BLNC_SECD_NM 과 같음
    4. 도메인 연결 뒤 서치콘솔·네이버 사이트맵 제출, `npm run ops:daily` 예약
    5. (DART 키는 Secrets 에 있음) `ipo:{고유번호}` 묶음과 `ipo-*` 일정 생산(동기화 쪽) — 화면은 준비됨
