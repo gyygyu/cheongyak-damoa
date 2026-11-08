@@ -6,7 +6,7 @@
 - Plan A 기반·순수 로직: `docs/superpowers/plans/2026-11-07-cheongyak-foundation.md`
 - Plan B 특공 판정: `docs/superpowers/plans/2026-11-07-cheongyak-special-supply.md`
 - Plan C 동기화: `docs/superpowers/plans/2026-11-07-cheongyak-sync.md`
-- 뒤이을 계획: Plan D 화면·배포 문서·ops
+- Plan D 화면·배포 문서·ops: `docs/superpowers/plans/2026-11-07-cheongyak-screens.md`, 배포 절차 `docs/deploy.md`
 
 ## 2. 단계별 구현 계획
 1. Plan A: 골격(T1), API 조사·fixtures(T2), D1 스키마(T3), 지역(T4), 실거래(T5), 분양권 매칭(T6), 공고·LH(T7), 공모주(T8)
@@ -29,18 +29,26 @@
 - [x] Plan A 최종 리뷰·수정 5건 (443dee6, 104/104)
 - [x] Plan B 특공 판정 (최종 리뷰 수정 4건 b1970bd, 189/189)
 - [x] Plan C 동기화 (plan-c-sync, 최종 리뷰 수정 6건 362a28d, 287/287)
-- [ ] Plan D 화면·배포 문서·ops
+- [x] Plan D 화면·배포 문서·ops (plan-d-screens, Task 1~9, 52 files·396 passed — opus 최종 리뷰 전)
 - [ ] plan-a-foundation·plan-b-special-supply·plan-c-sync 브랜치 main 병합 (사용자 확인 필요)
 
 ## 4. 진행률
-완료 13 / 전체 15 (마지막 갱신 2026-11-07, Plan D 2/9)
+완료 14 / 전체 15 (마지막 갱신 2026-11-08, Plan D 9/9 — 최종 리뷰·병합 남음)
 
 ## 5. 다음에 할 작업
-- Plan D 실행 중(브랜치 plan-d-screens): 계획 docs/superpowers/plans/2026-11-07-cheongyak-screens.md. Task 1(공용 틀, e544e13)·Task 2(표시 형식, d4b6c85) 완료 — 전체 시험 313 통과. **다음은 Task 3(홈·캘린더)**: `task-start <계획> 3` 으로 브리프를 받아 Task별 구현 에이전트에 맡긴다(원장 .superpowers/sdd/2026-11-07-cheongyak-screens/progress.md). Task 9까지 끝나면 opus 최종 리뷰 → 수정 한 번
-  - task-done 스크립트가 vitest 결과 줄을 잘못 적음 → 원장 줄을 실제 'N files, M passed'로 고친다
-  - CSS는 지원금다모아 복사 후 강조색 3줄만 바꿈 — 옛 녹색 rgba 잔존 여부 미확인
-- 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음
-- Plan C 실키 첫 수집 때 확인: 실거래 LAWD_CD 가 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
+1. **Plan D opus 최종 리뷰**(브랜치 plan-d-screens, 범위 928d5ee..Task 9 커밋): 계획 `docs/superpowers/plans/2026-11-07-cheongyak-screens.md` 의 Review Focus 5개와 원장 `.superpowers/sdd/2026-11-07-cheongyak-screens/progress.md` 의 Ruling 줄을 함께 본다
+2. 리뷰 지적 **수정 한 번**(전체 시험·typecheck·build 다시)
+3. **사용자 확인 필요** 브랜치 병합: plan-a-foundation·plan-b-special-supply·plan-c-sync·plan-d-screens → main
+4. **사용자 확인 필요** 배포(`docs/deploy.md`):
+   1. 1~3단계: Cloudflare 가입, D1·KV 만들기, `SITE_URL`(지금 localhost) 바꾸기, 0001 적용 여부 확인 뒤 원격 스키마, 첫 배포
+   2. 4단계: GitHub 저장소(origin — 지금 remote 없음)·Secrets, `SYNC_ENABLED=true`, 첫 동기화 수동 실행
+   3. 첫 실데이터 동기화 뒤 화면 점검(9단계): `/competition`·`/region/{시도}` 청약통장 표, `BLNC_SECD` 02·03 라벨(`src/lib/view/region.ts` AREA_KIND_LABEL — '102㎡ 이하'·'135㎡ 이하'는 추정), 실거래 `LAWD_CD` 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
+   4. 도메인 연결 뒤 서치콘솔·네이버 사이트맵 제출, `npm run ops:daily` 예약
+   5. DART 키 발급 뒤 `ipo:{고유번호}` 묶음과 `ipo-*` 일정 생산(동기화 쪽) — 화면은 준비됨
+- 참고: task-done 스크립트가 vitest 결과 줄을 잘못 적음 → 원장 줄을 실제 'N files, M passed'로 고친다
+- 참고: CSS는 지원금다모아 복사 후 강조색 3줄만 바꿈 — 옛 녹색 rgba 잔존 여부 미확인(최종 리뷰 때)
+- 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음 (`docs/deploy.md` 2단계)
+- 새로 clone 하면 `npm run cf-typegen` (`worker-configuration.d.ts` 는 git 제외)
 
 ## 6. 결정 사항 · 막혔던 문제
 - 청약홈 분양정보 API 401(11-07) — 개통 대기로 추정. survey 때 다시 확인
@@ -60,3 +68,13 @@
 - Plan C 실키 첫 실행 때 확인: API 일일 호출 한도, odcloud cond 필터가 실서버에서 걸리는지
 - 로컬 D1 옛 판은 `.wrangler/state/v3/d1_old_20261107` 로 옮겨 둠(지워도 됨)
 - Plan B 판정 근거 결정: 3년 부양 경계 포함, 제40조 ②·제46조 ③ 원문 Plan D 전 대조, 입양은 혼인 중 자녀로 봄, 가구원 수 ≥ 자녀 수는 화면에서 막음
+- Plan D: 공모주 화면은 `ipo:` 묶음·`ipo-*` 일정이 없으면 빈 안내/404 (생산자 없음). `/ipo` 목록은 이번 달·다음 달 `calendar:` 에서 고른다
+- Plan D: 분양가 ㎡당은 **전용면적** 기준(주변 시세 중위가와 같은 기준)
+- Plan D: `/trade/{시군구}` 자리는 시군구코드 5자리(이름 겹침 때문). 지역 화면은 이름, 실거래 표는 코드
+- Plan D: 캘린더는 이번 달·지난달 묶음을 함께 읽는다(묶음이 시작일 달에만 있어서)
+- Plan D: 사이트맵은 Worker 에서 KV list(하루 1,000회 한도) → 응답을 하루 캐시. `ipo:` 접두어는 생산자가 생기면 더한다
+- Plan D: 판정 폼은 `<form>`·`name` 없이 `data-field` 입력, 월소득은 만원으로 받아 원으로 바꾼다. 날짜가 공고일보다 뒤면 오류(태아 출산 예정일 제외)
+- Plan D: 깨진 `%` 주소는 Astro 7 이 라우팅 전에 빈 400 을 돌려줌(500·KV 오조회 없음) — 404 화면이 꼭 필요하면 Worker 진입부 별도 작업
+- Plan D: 청약통장 면적 구분 `BLNC_SECD` 02·03 라벨은 추정('102㎡ 이하'·'135㎡ 이하'), 공고 없는 시도는 `stats:account` 에서 골라 보여 줌
+- Plan D: `worker-configuration.d.ts` 의 HTMLRewriter Element 가 DOM Element 와 겹쳐 화면 스크립트는 HTMLElement·appendChild 로 씀
+- Plan D: `wrangler.jsonc` 의 `SITE_URL` 은 localhost 자리값, D1·KV ID 도 0 자리값 — 배포 때 바꾼다(`docs/deploy.md` 1단계)
