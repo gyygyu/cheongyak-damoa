@@ -298,7 +298,7 @@ select, input[type='search'], input[type='text'] {
   .page-head { align-items: flex-start; }
   .entry-links { grid-template-columns: 1fr; }
   .entry-links li + li { border-left: 0; border-top: 1px solid var(--line); }
-  .rows .ev { grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0 10px; }
+  .rows .ev { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 0 10px; }
   .cal { display: none; }
   .tabbar {
     display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
