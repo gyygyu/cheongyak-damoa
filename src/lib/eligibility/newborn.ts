@@ -5,11 +5,13 @@ import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeRe
 
 function under2Check(a: ApplicantInput, n: NoticeInput, article: string): Check {
   const label = '2세 미만 자녀';
-  if (a.children.some((c) => c.kind === 'fetus')) return chk(label, article, 'ok', '태아 포함');
+  const kids = a.children;
+  if (kids == null) return chk(label, article, 'check', '자녀 수와 출생일을 넣으면 판정합니다');
+  if (kids.some((c) => c.kind === 'fetus')) return chk(label, article, 'ok', '태아 포함');
   if (n.noticeDate == null) return chk(label, article, 'check', '공고일을 확인하세요');
   const on = n.noticeDate;
-  if (a.children.some((c) => c.birth != null && under2(c.birth, on))) return chk(label, article, 'ok');
-  if (a.children.some((c) => c.birth == null)) return chk(label, article, 'check', '자녀 출생일을 확인하세요');
+  if (kids.some((c) => c.birth != null && under2(c.birth, on))) return chk(label, article, 'ok');
+  if (kids.some((c) => c.birth == null)) return chk(label, article, 'check', '자녀 출생일을 확인하세요');
   return chk(label, article, 'no', '공고일 현재 2세 미만(2세가 되는 날 포함) 자녀가 있어야 함');
 }
 

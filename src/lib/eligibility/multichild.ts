@@ -6,6 +6,7 @@ import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeRe
 
 function minorsCheck(a: ApplicantInput, n: NoticeInput): Check {
   const label = '미성년 자녀 2명 이상', article = '제40조 제1항';
+  if (a.children == null) return chk(label, article, 'check', '자녀 수와 출생일을 넣으면 판정합니다');
   const on = n.noticeDate;
   let sure = 0, unknown = 0;
   for (const c of a.children) {

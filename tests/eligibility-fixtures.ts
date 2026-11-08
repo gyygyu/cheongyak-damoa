@@ -2,7 +2,7 @@
 import type { ApplicantInput, NoticeInput, TypeResult, Check } from '../src/lib/eligibility/types';
 
 export const applicant = (o: Partial<ApplicantInput> = {}): ApplicantInput => ({
-  homeOwner: 'none', everOwned: false, householdHead: true, singleHousehold: false,
+  homeOwner: 'none', everOwned: false, householdHead: true, singleHousehold: false, married: true,
   marriageDate: '2022-03-01', children: [{ kind: 'born', birth: '2025-05-01' }],
   householdSize: 3, monthlyIncome: 6_000_000, dualIncome: false, incomeTaxYears: 6,
   savingsMonths: 24, savingsPayments: 24, savingsTotal: 700, priorSpecial: false,

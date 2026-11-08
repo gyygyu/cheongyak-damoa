@@ -27,8 +27,9 @@ export interface ApplicantInput {
   everOwned: boolean | null;       // 세대 전원 과거 소유 이력(배우자의 혼인 전 소유 제외 — 제55조의3 ①2)
   householdHead: boolean | null;   // 세대주인가
   singleHousehold: boolean | null; // 단독세대주이거나 세대원이 아닌 동거인(제43조 후단)
-  marriageDate: string | null;     // 혼인신고일 — 값이 있으면 혼인 중으로 본다
-  children: Child[];
+  married: boolean | null;         // 혼인 중인가 — null 은 모름. marriageDate 가 있으면 혼인 중으로 본다
+  marriageDate: string | null;     // 혼인신고일
+  children: Child[] | null;        // 자녀(태아·입양 포함). null 은 자녀 수 모름 — [] 은 자녀 없음
   householdSize: number | null;    // 태아 포함 세대 구성원 수
   monthlyIncome: number | null;    // 세대 월평균 소득(원)
   dualIncome: boolean | null;      // 배우자도 소득이 있는가
@@ -49,6 +50,9 @@ export interface TypeResult {
   checks: Check[];
   rank?: '1순위' | '2순위' | '확인 필요'; // 신혼부부 공급 순위(제41조)
 }
+
+/** 혼인 상태: 혼인신고일이 있으면 혼인 중, 없으면 married 값(모름은 null) */
+export const isMarried = (a: ApplicantInput): boolean | null => (a.marriageDate != null ? true : a.married);
 
 export const combine = (checks: readonly Check[]): Verdict =>
   checks.some((c) => c.verdict === 'no') ? 'no' : checks.some((c) => c.verdict === 'check') ? 'check' : 'ok';

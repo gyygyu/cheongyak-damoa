@@ -2,7 +2,7 @@
 // 단독세대주·세대원이 아닌 동거인은 전용 60㎡ 이하만(같은 조 후단). 제55조의3 ③ 특례 대상이 아니다.
 import { chk, homelessCheck, incomeCheck, oneTimeCheck, privateAreaCheck, rank1Check } from './common';
 import { incomeTableFor, type IncomeTable } from './income';
-import { combine, type ApplicantInput, type Check, type NoticeInput, type TypeResult } from './types';
+import { combine, isMarried, type ApplicantInput, type Check, type NoticeInput, type TypeResult } from './types';
 
 export function judgeFirstLife(a: ApplicantInput, n: NoticeInput, tables: readonly IncomeTable[]): TypeResult {
   const national = n.supplyKind === 'national';
@@ -21,9 +21,12 @@ export function judgeFirstLife(a: ApplicantInput, n: NoticeInput, tables: readon
     : chk('주택 소유 이력 없음', article, 'no', '세대 구성원 모두 주택을 소유한 적이 없어야 함'));
   checks.push(rank1Check(n));
   checks.push(homelessCheck(a, 'first_life', article));
-  checks.push(a.marriageDate != null || a.children.length > 0
+  const married = isMarried(a);
+  checks.push(married === true || (a.children != null && a.children.length > 0)
     ? chk('혼인 중이거나 자녀 있음', article, 'ok')
-    : chk('혼인 중이거나 자녀 있음', `${article} 제2호 나목`, 'check', '혼인 중이 아니고 자녀도 없으면 같은 호 나목 요건을 공고문에서 확인하세요'));
+    : married == null || a.children == null
+      ? chk('혼인 중이거나 자녀 있음', article, 'check', '혼인 여부와 자녀 수를 넣으면 판정합니다')
+      : chk('혼인 중이거나 자녀 있음', `${article} 제2호 나목`, 'check', '혼인 중이 아니고 자녀도 없으면 같은 호 나목 요건을 공고문에서 확인하세요'));
   checks.push(a.incomeTaxYears == null ? chk('소득세 5년 이상 납부', article, 'check', '소득세 납부 연수를 확인하세요')
     : a.incomeTaxYears >= 5 ? chk('소득세 5년 이상 납부', article, 'ok')
     : chk('소득세 5년 이상 납부', article, 'no', '근로자·자영업자로 소득세를 5년 이상 내야 함'));

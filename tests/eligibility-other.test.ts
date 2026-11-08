@@ -36,7 +36,7 @@ describe('제43조 생애최초', () => {
     expect(judgeFirstLife(a, notice({ areaExcl: 60.01 }), T).verdict).toBe('no');
   });
   it('제43조 ① 혼인 중도 아니고 자녀도 없으면 같은 항 제2호 나목 확인 필요', () => {
-    const r = judgeFirstLife(applicant({ marriageDate: null, children: [] }), notice(), T);
+    const r = judgeFirstLife(applicant({ married: false, marriageDate: null, children: [] }), notice(), T);
     expect(find(r, '혼인 중이거나 자녀 있음')?.verdict).toBe('check');
   });
   it('제43조는 제55조의3 ③ 특례 대상이 아니다', () => {

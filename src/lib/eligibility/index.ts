@@ -24,7 +24,7 @@ function normalizeInput(a: ApplicantInput, n: NoticeInput): [ApplicantInput, Not
     {
       ...a,
       marriageDate: normalizeDate(a.marriageDate),
-      children: a.children.map((c) => ({ ...c, birth: normalizeDate(c.birth) })),
+      children: a.children == null ? null : a.children.map((c) => ({ ...c, birth: normalizeDate(c.birth) })),
       parent: a.parent == null ? null : { ...a.parent, birth: normalizeDate(a.parent.birth), since: normalizeDate(a.parent.since) },
     },
     { ...n, noticeDate: normalizeDate(n.noticeDate), areaExcl: area != null && Number.isFinite(area) && area > 0 ? area : null },

@@ -16,7 +16,7 @@ describe('제41조 신혼부부', () => {
     expect(judgeNewlywed(applicant({ marriageDate: '2019-11-06' }), notice(), T).verdict).toBe('no');
   });
   it('제41조 ① 미혼은 불가', () => {
-    expect(judgeNewlywed(applicant({ marriageDate: null }), notice(), T).verdict).toBe('no');
+    expect(judgeNewlywed(applicant({ married: false, marriageDate: null }), notice(), T).verdict).toBe('no');
   });
   it('제41조 ① 민영은 전용 85㎡ 이하만 — 84.9512·85 통과, 85.0001 불가', () => {
     const p = (areaExcl: number) => judgeNewlywed(applicant(), notice({ supplyKind: 'private', areaExcl }), T);

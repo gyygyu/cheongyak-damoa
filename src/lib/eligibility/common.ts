@@ -20,8 +20,9 @@ export const BIRTH_EXCEPTION_FROM = '2024-06-19';
 /** 제55조의3 ③ 특례가 붙는 유형(제35조의3·제40조·제41조·제46조) */
 const EXCEPTION_TYPES: readonly SpecialType[] = ['newborn', 'multichild', 'newlywed', 'elderly_parent'];
 
-/** 제55조의3 ③: 2024. 6. 19. 이후 출생 자녀(태아, 그 이후 출생자 입양 포함). 출생일 모르는 자녀만 있으면 null */
-export function hasPostExceptionChild(children: readonly Child[]): boolean | null {
+/** 제55조의3 ③: 2024. 6. 19. 이후 출생 자녀(태아, 그 이후 출생자 입양 포함). 자녀 수나 출생일을 모르면 null */
+export function hasPostExceptionChild(children: readonly Child[] | null): boolean | null {
+  if (children == null) return null;
   let unknown = false;
   for (const c of children) {
     if (c.kind === 'fetus') return true;
@@ -62,7 +63,7 @@ export function oneTimeCheck(a: ApplicantInput, type: SpecialType): Check {
 }
 
 export function savingsCheck(a: ApplicantInput, n: NoticeInput): Check {
-  const label = '청약통장(제48조)';
+  const label = '청약통장';
   if (a.savingsMonths == null) return chk(label, '제48조', 'check', '청약통장 가입 기간을 확인하세요');
   if (a.savingsMonths < 6) return chk(label, '제48조', 'no', '가입 6개월이 지나야 함');
   if (n.supplyKind === 'national') {
