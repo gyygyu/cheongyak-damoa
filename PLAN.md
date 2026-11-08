@@ -33,24 +33,23 @@
 - [ ] plan-a-foundation·plan-b-special-supply·plan-c-sync 브랜치 main 병합 (사용자 확인 필요)
 
 ## 4. 진행률
-완료 14 / 전체 15 (마지막 갱신 2026-11-08, Plan D 9/9 — 최종 리뷰·병합 남음)
+완료 14 / 전체 15 (마지막 갱신 2026-11-08, Plan D 완료·최종 리뷰 반영 — 병합·배포 남음)
 
 ## 5. 다음에 할 작업
-1. **Plan D opus 최종 리뷰**(브랜치 plan-d-screens, 범위 928d5ee..Task 9 커밋): 계획 `docs/superpowers/plans/2026-11-07-cheongyak-screens.md` 의 Review Focus 5개와 원장 `.superpowers/sdd/2026-11-07-cheongyak-screens/progress.md` 의 Ruling 줄을 함께 본다
-2. 리뷰 지적 **수정 한 번**(전체 시험·typecheck·build 다시)
-3. **사용자 확인 필요** 브랜치 병합: plan-a-foundation·plan-b-special-supply·plan-c-sync·plan-d-screens → main
-4. **사용자 확인 필요** 배포(`docs/deploy.md`):
+1. ~~Plan D opus 최종 리뷰·수정 한 번~~ 완료(2026-11-08, 1558fd1, 시험 409/409). 미룬 작은 것은 §6 'Plan D 최종 리뷰 미룬 것'
+2. **사용자 확인 필요** 브랜치 병합: plan-a-foundation·plan-b-special-supply·plan-c-sync·plan-d-screens → main
+3. **사용자 확인 필요** 배포(`docs/deploy.md`):
    1. 1~3단계: Cloudflare 가입, D1·KV 만들기, `SITE_URL`(지금 localhost) 바꾸기, 0001 적용 여부 확인 뒤 원격 스키마, 첫 배포
    2. 4단계: GitHub 저장소(origin — 지금 remote 없음)·Secrets, `SYNC_ENABLED=true`, 첫 동기화 수동 실행
    3. 첫 실데이터 동기화 뒤 화면 점검(9단계): `/competition`·`/region/{시도}` 청약통장 표, `BLNC_SECD` 02·03 라벨(`src/lib/view/region.ts` AREA_KIND_LABEL — '102㎡ 이하'·'135㎡ 이하'는 추정), 실거래 `LAWD_CD` 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
    4. 도메인 연결 뒤 서치콘솔·네이버 사이트맵 제출, `npm run ops:daily` 예약
    5. DART 키 발급 뒤 `ipo:{고유번호}` 묶음과 `ipo-*` 일정 생산(동기화 쪽) — 화면은 준비됨
-- 참고: task-done 스크립트가 vitest 결과 줄을 잘못 적음 → 원장 줄을 실제 'N files, M passed'로 고친다
-- 참고: CSS는 지원금다모아 복사 후 강조색 3줄만 바꿈 — 옛 녹색 rgba 잔존 여부 미확인(최종 리뷰 때)
 - 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음 (`docs/deploy.md` 2단계)
 - 새로 clone 하면 `npm run cf-typegen` (`worker-configuration.d.ts` 는 git 제외)
 
 ## 6. 결정 사항 · 막혔던 문제
+- Plan D 최종 리뷰 미룬 것(작은 것, 필요할 때 처리): global.css 안 쓰는 선택자 속 옛 녹색 rgba(15,110,86) / 깨진 % 주소는 Astro 가 빈 400(메뉴 없음) — Worker 진입부에서 404 화면으로 / 묶음이 없을 때도 home·competition·ipo 가 공개 캐시 1시간 / `/api/meta.json` 이 lastError(외부 응답 일부) 공개 — lastSuccess 만 / docs/deploy.md 면적 02·03 '추정' 문구 / ops-daily RUM·Workers date 필터가 UTC(한국 날짜와 9시간) / SITE_URL 이 wrangler.jsonc·site-meta.ts 두 곳 / 공모주 철회 배지 색이 정정과 같음 / LH 상세는 잘린 묶음 안내 없음 / 전전달 시작 긴 일정은 캘린더에서 빠짐 / 화면 스크립트 DOM 타입이 worker 타입과 섞임(tsconfig 분리)
+- Plan D Ruling: 묶음 지역 청약통장 통계 — 세종은 기타지역, 전남광주통합특별시는 5대광역시(옛 광주)·기타지역(옛 전남) 둘 다 밝힘, 묶음 줄은 단독 줄이 없을 때만
 - 청약홈 분양정보 API 401(11-07) — 개통 대기로 추정. survey 때 다시 확인
 - OpenDART 키는 사용자가 발급해 `.env` 에 넣는다
 - 도메인 미확정 — `src/lib/site-meta.ts` 에서만 바꾼다
