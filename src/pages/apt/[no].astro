@@ -36,11 +36,20 @@ else Astro.response.status = 404;
 
       <h2>주택형별 분양가</h2>
       {v.models.length === 0 ? <p class="empty">주택형 자료가 아직 없습니다.</p> : (
-        <div class="table-wrap"><table class="data-table">
-          <thead><tr><th>주택형</th><th>전용면적</th><th class="num">일반</th><th class="num">특공</th><th class="num">최고 분양가</th><th class="num">㎡당(전용)</th><th class="num">평당</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="data-table data-table--stack">
+          <thead><tr><th>주택형</th><th>전용면적</th><th class="num">일반</th><th class="num">특공</th><th class="num">최고 분양가</th><th class="num">㎡당(전용)</th><th class="num">평당</th><th><span class="sr-only">자격 판정</span></th></tr></thead>
+          {/* 휴대폰에서는 주택형 → 최고 분양가 크게 → 나머지 → 자격 판정 버튼(줄 너비) 순서로 쌓는다 */}
           <tbody>{v.models.map((m) => (
-            <tr><td>{m.houseTy}</td><td class="num">{m.area}</td><td class="num">{m.general}</td><td class="num">{m.special}</td><td class="num">{m.topPrice}</td><td class="num">{m.perSqm}</td><td class="num">{m.perPyeong}</td>
-              <td><a class="btn btn--ghost" href={m.eligibilityHref}>이 단지로 자격 판정</a></td></tr>
+            <tr>
+              <td class="cell-title" data-label="주택형">{m.houseTy}</td>
+              <td class="num" data-label="전용면적">{m.area}</td>
+              <td class="num" data-label="일반">{m.general}</td>
+              <td class="num" data-label="특공">{m.special}</td>
+              <td class="num cell-key" data-label="최고 분양가">{m.topPrice}</td>
+              <td class="num" data-label="㎡당(전용)">{m.perSqm}</td>
+              <td class="num" data-label="평당">{m.perPyeong}</td>
+              <td class="cell-action"><a class="btn btn--ghost" href={m.eligibilityHref}>이 단지로 자격 판정</a></td>
+            </tr>
           ))}</tbody>
         </table></div>
       )}
@@ -53,9 +62,18 @@ else Astro.response.status = 404;
 
       <h2>경쟁률</h2>
       {v.competition.length === 0 ? <p class="empty">경쟁률은 접수가 끝난 뒤 청약홈에 공개됩니다.</p> : (
-        <div class="table-wrap"><table class="data-table">
+        <div class="table-wrap"><table class="data-table data-table--stack">
           <thead><tr><th>주택형</th><th>순위</th><th>거주</th><th class="num">공급</th><th class="num">접수</th><th class="num">경쟁률</th></tr></thead>
-          <tbody>{v.competition.map((c) => <tr><td>{c.houseTy}</td><td>{c.rank}</td><td>{c.residence}</td><td class="num">{c.supply}</td><td class="num">{c.applicants}</td><td class="num">{c.rate}</td></tr>)}</tbody>
+          <tbody>{v.competition.map((c) => (
+            <tr>
+              <td class="cell-title" data-label="주택형">{c.houseTy}</td>
+              <td data-label="순위">{c.rank}</td>
+              <td data-label="거주">{c.residence}</td>
+              <td class="num" data-label="공급">{c.supply}</td>
+              <td class="num" data-label="접수">{c.applicants}</td>
+              <td class="num cell-key" data-label="경쟁률">{c.rate}</td>
+            </tr>
+          ))}</tbody>
         </table></div>
       )}
 
@@ -70,9 +88,17 @@ else Astro.response.status = 404;
       {v.presale.length > 0 && (
         <>
           <h2>분양권·입주권 거래</h2>
-          <div class="table-wrap"><table class="data-table">
+          <div class="table-wrap"><table class="data-table data-table--stack">
             <thead><tr><th>계약일</th><th>구분</th><th>전용면적</th><th class="num">층</th><th class="num">거래 금액</th></tr></thead>
-            <tbody>{v.presale.map((p) => <tr><td class="num">{p.date}</td><td>{p.kind}{p.cancelled && ' (해제)'}</td><td class="num">{p.area}</td><td class="num">{p.floor}</td><td class="num">{p.amount}</td></tr>)}</tbody>
+            <tbody>{v.presale.map((p) => (
+              <tr>
+                <td class="num cell-title" data-label="계약일">{p.date}</td>
+                <td data-label="구분">{p.kind}{p.cancelled && ' (해제)'}</td>
+                <td class="num" data-label="전용면적">{p.area}</td>
+                <td class="num" data-label="층">{p.floor}</td>
+                <td class="num cell-key" data-label="거래 금액">{p.amount}</td>
+              </tr>
+            ))}</tbody>
           </table></div>
         </>
       )}

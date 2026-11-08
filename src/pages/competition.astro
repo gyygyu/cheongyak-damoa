@@ -16,9 +16,19 @@ setPublicCache(Astro.response.headers);
   <h1>청약 경쟁률 모음</h1>
   {truncated && <p class="hint">{truncated}</p>}
   {rows.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
-    <div class="table-wrap"><table class="data-table">
+    <div class="table-wrap"><table class="data-table data-table--stack">
       <thead><tr><th>단지</th><th>지역</th><th>모집공고</th><th class="num">최고 경쟁률</th><th class="num">접수</th><th class="num">공급</th></tr></thead>
-      <tbody>{rows.map((r) => <tr><td><a href={r.href}>{r.name}</a></td><td>{r.place}</td><td class="num">{r.noticeDate}</td><td class="num">{r.rate}</td><td class="num">{r.applicants}</td><td class="num">{r.supply}</td></tr>)}</tbody>
+      {/* 휴대폰(760px 이하)에서는 행마다 단지명 → 최고 경쟁률 크게 → 나머지 'data-label 값' 줄로 쌓는다 (global.css .data-table--stack) */}
+      <tbody>{rows.map((r) => (
+        <tr>
+          <td class="cell-title" data-label="단지"><a href={r.href}>{r.name}</a></td>
+          <td data-label="지역">{r.place}</td>
+          <td class="num" data-label="모집공고">{r.noticeDate}</td>
+          <td class="num cell-key" data-label="최고 경쟁률">{r.rate}</td>
+          <td class="num" data-label="접수">{r.applicants}</td>
+          <td class="num" data-label="공급">{r.supply}</td>
+        </tr>
+      ))}</tbody>
     </table></div>
   )}
 </Base>
