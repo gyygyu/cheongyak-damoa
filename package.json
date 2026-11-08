@@ -14,7 +14,8 @@
     "sync": "node --env-file-if-exists=.env --import tsx sync/main.ts",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "survey": "node --env-file-if-exists=.env --import tsx sync/survey.ts",
-    "lawd:snapshot": "node --env-file-if-exists=.env --import tsx sync/lawd-snapshot.ts"
+    "lawd:snapshot": "node --env-file-if-exists=.env --import tsx sync/lawd-snapshot.ts",
+    "ops:daily": "node --env-file-if-exists=.env --import tsx sync/ops-daily.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",
