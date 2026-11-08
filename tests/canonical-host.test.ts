@@ -16,5 +16,10 @@ describe('canonicalRedirect', () => {
 });
 
 describe('cacheKeyUrl', () => {
-  it('배포 판 번호를 붙인다', () => expect(cacheKeyUrl('https://a.com/b?c=1', 'v9')).toBe('https://a.com/b?c=1&__v=v9'));
+  it('배포 판 번호를 붙인다', () => expect(cacheKeyUrl('https://a.com/b', 'v9')).toBe('https://a.com/b?__v=v9'));
+  it('요청 쿼리는 캐시 키에서 지운다 (?utm= 로 캐시 우회 방지)', () => {
+    expect(cacheKeyUrl('https://a.com/b?utm_source=x&c=1', 'v9')).toBe('https://a.com/b?__v=v9');
+    expect(cacheKeyUrl('https://a.com/b?__v=old', 'v9')).toBe('https://a.com/b?__v=v9');
+    expect(cacheKeyUrl('https://a.com/b?x=1#h', 'v9')).toBe('https://a.com/b?__v=v9');
+  });
 });

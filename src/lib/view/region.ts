@@ -35,6 +35,25 @@ export function accountRows(rows: AccountRow[]) {
 export const sidoAccountRows = (rows: AccountRow[], sido: string): AccountRow[] =>
   rows.filter((r) => { const w = r.region.split(' ')[0]; return (SIDO_ALIAS[w] ?? w) === sido; });
 
+// 청약통장 통계(all) 실응답의 묶음 지역(SUBSCRPT_AREA_CODE_NM, sync/fixtures/account-stats/all.json 철자) → 시도(SIDO_LIST 값).
+// 5대광역시는 부산·대구·광주·대전·울산. 광주+전남이 합친 전남광주통합특별시는 옛 광주(5대광역시)·옛 전남(기타지역) 둘 다,
+// 세종은 광역시가 아니라 기타지역에 둔다
+export const ACCOUNT_GROUP_SIDO: Record<string, readonly string[]> = {
+  '인천·경기': ['인천광역시', '경기도'],
+  '5대광역시': ['부산광역시', '대구광역시', '전남광주통합특별시', '대전광역시', '울산광역시'],
+  '기타지역': ['세종특별자치시', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도', '전남광주통합특별시', '경상북도', '경상남도', '제주특별자치도'],
+};
+
+// 시도 화면의 청약통장 줄: region:{시도} 묶음 줄 → stats:account 의 그 시도 줄 → 없으면 그 시도가 든 묶음 지역 줄(어느 묶음인지 밝힘)
+export function sidoAccount(statsRows: AccountRow[], sido: string, bundleRows?: AccountRow[] | null): { rows: AccountRow[]; note: string | null } {
+  const own = bundleRows?.length ? bundleRows : sidoAccountRows(statsRows, sido);
+  if (own.length) return { rows: own, note: null };
+  const groups = Object.keys(ACCOUNT_GROUP_SIDO).filter((g) => ACCOUNT_GROUP_SIDO[g].includes(sido));
+  const rows = statsRows.filter((r) => groups.includes(r.region));
+  const shown = groups.filter((g) => rows.some((r) => r.region === g));
+  return { rows, note: shown.length ? `이 시도 단독 통계가 없어 ${shown.map((g) => `'${g}'`).join('·')} 묶음 통계를 보여 줍니다.` : null };
+}
+
 export function noticeRows(list: NoticeSummary[]) {
   return list.map((n) => ({
     name: n.name ?? n.pblancNo ?? '-', href: n.pblancNo ? hrefOf(`apt:${n.pblancNo}`) : null,

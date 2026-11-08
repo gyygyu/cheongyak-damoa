@@ -8,14 +8,17 @@ import { getJson } from '../server/kv';
 import { setPublicCache } from '../server/cache';
 import { homeView } from '../lib/view/home';
 import { todayKst } from '../lib/date';
+import { truncatedNotice } from '../lib/view/truncated';
 import type { HomeBundle } from '../lib/view/bundle-types';
 
 const bundle = await getJson<HomeBundle>(KV_KEYS.home);
+const truncated = truncatedNotice(bundle);
 const v = homeView(bundle, bundle?.today ?? todayKst());
 setPublicCache(Astro.response.headers);
 ---
 <Base title={SITE.name} description={SITE.tagline} sources={['applyhome', 'competition', 'lh']}>
   <h1>오늘의 청약 일정</h1>
+  {truncated && <p class="hint">{truncated}</p>}
   <p class="tabular">{v.today} 기준 · <a href={`/calendar/${v.today.slice(0, 7)}`}>이번 달 캘린더</a></p>
   <h2>오늘 진행 중</h2>
   <EventList rows={v.todayRows} empty="오늘 진행 중인 일정이 없습니다." />

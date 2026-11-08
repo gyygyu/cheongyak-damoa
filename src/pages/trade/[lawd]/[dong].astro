@@ -6,6 +6,7 @@ import { getJson } from '../../../server/kv';
 import { setPublicCache } from '../../../server/cache';
 import { safeParam } from '../../../lib/view/format';
 import { tradeView } from '../../../lib/view/region';
+import { truncatedNotice } from '../../../lib/view/truncated';
 import type { TradeBundle } from '../../../lib/view/bundle-types';
 
 // 주소의 시군구 자리는 시군구코드 5자리(이름이 겹치는 '중구' 등 때문)
@@ -13,6 +14,7 @@ const lawd = safeParam(Astro.params.lawd);
 const dong = safeParam(Astro.params.dong);
 const b = lawd && dong && /^\d{5}$/.test(lawd) ? await getJson<TradeBundle>(KV_KEYS.trade(lawd, dong)) : null;
 const v = b ? tradeView(b) : null;
+const truncated = truncatedNotice(b);
 if (v) setPublicCache(Astro.response.headers);
 else Astro.response.status = 404;
 ---
@@ -21,6 +23,7 @@ else Astro.response.status = 404;
     <section>
       <h1>{v.title}</h1>
       <p class="page-notice">최근 12개월 계약 기준. 해제된 거래는 표시만 하고 시세 계산에서 뺍니다.</p>
+      {truncated && <p class="hint">{truncated}</p>}
       {v.complexes.length === 0 ? <p class="empty">거래가 없습니다.</p> : v.complexes.map((c) => (
         <section>
           <h2>{c.name} <small>{c.buildYear}</small></h2>

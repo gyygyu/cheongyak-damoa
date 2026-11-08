@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { SIDO_LIST, regionHref, tradeHref, competitionRows, accountRows, sidoAccountRows, noticeRows, sigunguLinks, dongRows, tradeView } from '../src/lib/view/region';
+import { readFileSync } from 'node:fs';
+import { SIDO_LIST, regionHref, tradeHref, competitionRows, accountRows, sidoAccountRows, sidoAccount, ACCOUNT_GROUP_SIDO, noticeRows, sigunguLinks, dongRows, tradeView } from '../src/lib/view/region';
 
 describe('시도 목록', () => {
   it('16개, 통합 시도 이름 포함', () => {
@@ -48,6 +49,52 @@ describe('청약통장', () => {
   });
   it('모르는 코드는 코드 그대로 보인다', () => {
     expect(accountRows([{ base_month: '2026-09', region: '서울', account_kind: 'x', area_kind: '07', subscribers: 1, rank1: 1, rank2: 1 }])[0].area).toBe('면적 구분 07');
+  });
+});
+
+describe('묶음 지역 청약통장 통계 (인천·경기·5대광역시·기타지역)', () => {
+  const r = (region: string) => ({ base_month: '2026-09', region, account_kind: 'x', area_kind: '01', subscribers: 1, rank1: 1, rank2: 1 });
+  // fixture(sync/fixtures/account-stats/all.json) 실응답의 SUBSCRPT_AREA_CODE_NM 철자 그대로
+  const fixtureGroups = JSON.parse(readFileSync('sync/fixtures/account-stats/all.json', 'utf8')).data
+    .map((x: { SUBSCRPT_AREA_CODE_NM: string }) => x.SUBSCRPT_AREA_CODE_NM).filter((v: string) => v !== '서울');
+  const stats = [r('서울'), r('인천·경기'), r('5대광역시'), r('기타지역'), r('대전'), r('강원 원주')];
+
+  it('대응표의 묶음 이름은 실응답 철자와 같다', () => {
+    expect(Object.keys(ACCOUNT_GROUP_SIDO).sort()).toEqual([...new Set<string>(fixtureGroups)].sort());
+  });
+  it('대응표의 시도 이름은 모두 SIDO_LIST 값이고, 서울을 뺀 모든 시도가 어느 묶음엔가 든다', () => {
+    const all = Object.values(ACCOUNT_GROUP_SIDO).flat();
+    for (const s of all) expect(SIDO_LIST).toContain(s);
+    expect(SIDO_LIST.filter((s) => !all.includes(s))).toEqual(['서울특별시']);
+  });
+  it('단독 통계가 없는 경기도·인천은 인천·경기 묶음을 밝히고 보여 준다', () => {
+    for (const sido of ['경기도', '인천광역시']) {
+      const a = sidoAccount(stats, sido);
+      expect(a.rows.map((x) => x.region)).toEqual(['인천·경기']);
+      expect(a.note).toBe("이 시도 단독 통계가 없어 '인천·경기' 묶음 통계를 보여 줍니다.");
+    }
+  });
+  it('부산은 5대광역시, 세종·충북은 기타지역 묶음', () => {
+    expect(sidoAccount(stats, '부산광역시').rows.map((x) => x.region)).toEqual(['5대광역시']);
+    expect(sidoAccount(stats, '세종특별자치시').rows.map((x) => x.region)).toEqual(['기타지역']);
+    expect(sidoAccount(stats, '충청북도').note).toBe("이 시도 단독 통계가 없어 '기타지역' 묶음 통계를 보여 줍니다.");
+  });
+  it('광주+전남 통합 시도는 5대광역시(옛 광주)·기타지역(옛 전남) 둘 다', () => {
+    const a = sidoAccount(stats, '전남광주통합특별시');
+    expect(a.rows.map((x) => x.region)).toEqual(['5대광역시', '기타지역']);
+    expect(a.note).toBe("이 시도 단독 통계가 없어 '5대광역시'·'기타지역' 묶음 통계를 보여 줍니다.");
+  });
+  it('단독 줄이 있으면 묶음을 섞지 않는다 (서울·대전·강원)', () => {
+    expect(sidoAccount(stats, '대전광역시')).toEqual({ rows: [r('대전')], note: null });
+    expect(sidoAccount(stats, '서울특별시')).toEqual({ rows: [r('서울')], note: null });
+    expect(sidoAccount(stats, '강원특별자치도').rows.map((x) => x.region)).toEqual(['강원 원주']);
+  });
+  it('region:{시도} 묶음의 account 가 있으면 그것을 쓴다', () => {
+    expect(sidoAccount(stats, '경기도', [r('경기 수원')])).toEqual({ rows: [r('경기 수원')], note: null });
+    expect(sidoAccount(stats, '경기도', []).rows.map((x) => x.region)).toEqual(['인천·경기']);
+  });
+  it('통계가 아예 없으면 빈 목록, 안내 없음', () => {
+    expect(sidoAccount([], '경기도')).toEqual({ rows: [], note: null });
   });
 });
 

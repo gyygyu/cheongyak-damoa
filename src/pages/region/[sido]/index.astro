@@ -5,16 +5,20 @@ import { KV_KEYS } from '../../../lib/kv-keys';
 import { getJson } from '../../../server/kv';
 import { setPublicCache } from '../../../server/cache';
 import { safeParam } from '../../../lib/view/format';
-import { SIDO_LIST, noticeRows, sigunguLinks, accountRows, sidoAccountRows } from '../../../lib/view/region';
+import { SIDO_LIST, noticeRows, sigunguLinks, accountRows, sidoAccount } from '../../../lib/view/region';
+import { truncatedNotice } from '../../../lib/view/truncated';
 import type { SidoBundle, AccountBundle } from '../../../lib/view/bundle-types';
 
 const sido = safeParam(Astro.params.sido);
 const known = sido !== null && SIDO_LIST.includes(sido);
 const [b, acc] = known ? await Promise.all([getJson<SidoBundle>(KV_KEYS.region(sido)), getJson<AccountBundle>(KV_KEYS.account)]) : [null, null];
-// 공고가 없는 시도도 화면은 보여 준다(빈 안내). 그때 청약통장 현황은 stats:account 에서 그 시도 줄만 (spec §7)
+// 공고가 없는 시도도 화면은 보여 준다(빈 안내). 그때 청약통장 현황은 stats:account 에서 그 시도 줄만 (spec §7),
+// 단독 줄이 없으면 그 시도가 든 묶음 지역(인천·경기·5대광역시·기타지역) 줄을 어느 묶음인지 밝혀 보여 준다
 const notices = noticeRows(b?.notices ?? []);
 const links = b ? sigunguLinks(b) : [];
-const account = accountRows(b ? b.account : known ? sidoAccountRows(acc?.rows ?? [], sido) : []);
+const sidoAcc = known ? sidoAccount(acc?.rows ?? [], sido, b?.account) : { rows: [], note: null };
+const account = accountRows(sidoAcc.rows);
+const truncated = truncatedNotice(b, acc);
 if (known) setPublicCache(Astro.response.headers);
 else Astro.response.status = 404;
 ---
@@ -22,6 +26,7 @@ else Astro.response.status = 404;
   {!known ? <NotFound message="시도 이름을 다시 확인해 주세요." /> : (
     <section>
       <h1>{sido}</h1>
+      {truncated && <p class="hint">{truncated}</p>}
       <h2>시군구</h2>
       {links.length === 0 ? <p class="empty">최근 공고가 있는 시군구가 없습니다.</p> : <ul class="tiles">{links.map((l) => <li><a class="tile" href={l.href}>{l.name}</a></li>)}</ul>}
       <h2>청약 공고</h2>
@@ -32,6 +37,7 @@ else Astro.response.status = 404;
         </table></div>
       )}
       <h2>청약통장 가입 현황{acc?.baseMonth ? ` (${acc.baseMonth} 기준)` : ''}</h2>
+      {sidoAcc.note && <p class="hint">{sidoAcc.note}</p>}
       {account.length === 0 ? <p class="empty">청약통장 통계가 아직 없습니다.</p> : (
         <div class="table-wrap"><table class="data-table">
           <thead><tr><th>지역</th><th>통장</th><th>면적</th><th class="num">가입자</th><th class="num">1순위</th><th class="num">2순위</th></tr></thead>

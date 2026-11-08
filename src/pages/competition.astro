@@ -4,13 +4,17 @@ import { KV_KEYS } from '../lib/kv-keys';
 import { getJson } from '../server/kv';
 import { setPublicCache } from '../server/cache';
 import { competitionRows } from '../lib/view/region';
+import { truncatedNotice } from '../lib/view/truncated';
 import type { CompetitionBundle } from '../lib/view/bundle-types';
 
-const rows = competitionRows(await getJson<CompetitionBundle>(KV_KEYS.competition));
+const bundle = await getJson<CompetitionBundle>(KV_KEYS.competition);
+const rows = competitionRows(bundle);
+const truncated = truncatedNotice(bundle);
 setPublicCache(Astro.response.headers);
 ---
 <Base title="청약 경쟁률 모음" description="최근 아파트 청약 단지별 최고 경쟁률과 접수 건수" sources={['competition', 'applyhome']}>
   <h1>청약 경쟁률 모음</h1>
+  {truncated && <p class="hint">{truncated}</p>}
   {rows.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
     <div class="table-wrap"><table class="data-table">
       <thead><tr><th>단지</th><th>지역</th><th>모집공고</th><th class="num">최고 경쟁률</th><th class="num">접수</th><th class="num">공급</th></tr></thead>

@@ -7,11 +7,13 @@ import { getJson } from '../../server/kv';
 import { setPublicCache } from '../../server/cache';
 import { safeParam } from '../../lib/view/format';
 import { aptView } from '../../lib/view/apt';
+import { truncatedNotice } from '../../lib/view/truncated';
 import type { AptBundle } from '../../lib/view/bundle-types';
 
 const no = safeParam(Astro.params.no);
 const bundle = no && /^[0-9A-Za-z_-]{1,30}$/.test(no) ? await getJson<AptBundle>(KV_KEYS.apt(no)) : null;
 const v = bundle ? aptView(bundle) : null;
+const truncated = truncatedNotice(bundle);
 if (v) setPublicCache(Astro.response.headers);
 else Astro.response.status = 404;
 ---
@@ -26,7 +28,7 @@ else Astro.response.status = 404;
         {' '}{v.place}
       </p>
       {v.banner && <p class:list={['banner', `banner--${v.banner.kind}`]}>{v.banner.text}</p>}
-      {v.truncated && <p class="hint">내용이 많아 일부 표만 보여 줍니다. 전체는 청약홈 공고에서 확인하세요.</p>}
+      {truncated && <p class="hint">{truncated}</p>}
 
       <h2>일정</h2>
       <dl class="info">{v.schedule.map((r) => <><dt>{r.label}</dt><dd class="tabular">{r.value}</dd></>)}</dl>

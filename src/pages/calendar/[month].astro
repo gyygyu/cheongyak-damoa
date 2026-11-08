@@ -7,6 +7,7 @@ import { getJson } from '../../server/kv';
 import { setPublicCache } from '../../server/cache';
 import { todayKst } from '../../lib/date';
 import { parseMonth, prevMonth, nextMonth, monthGrid, eventsByDay, mergeEvents, eventRow } from '../../lib/view/calendar';
+import { truncatedNotice } from '../../lib/view/truncated';
 import type { CalendarBundle } from '../../lib/view/bundle-types';
 
 const today = todayKst();
@@ -14,9 +15,11 @@ const ym = parseMonth(Astro.params.month, today);
 let grid: (string | null)[][] = [];
 let byDay: Record<string, ReturnType<typeof eventRow>[]> = {};
 let list: ReturnType<typeof eventRow>[] = [];
+let truncated: string | null = null;
 if (ym) {
   // 지난달에 시작해 이번 달까지 이어지는 일정 때문에 두 묶음을 읽는다 (각 50KB 이하)
   const [cur, prev] = await Promise.all([getJson<CalendarBundle>(KV_KEYS.calendar(ym)), getJson<CalendarBundle>(KV_KEYS.calendar(prevMonth(ym)))]);
+  truncated = truncatedNotice(cur, prev);
   const events = mergeEvents(prev?.events ?? [], cur?.events ?? []);
   grid = monthGrid(ym);
   byDay = eventsByDay(events, ym);
@@ -31,6 +34,7 @@ const title = ym ? `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월 �
   {!ym ? <NotFound message="캘린더는 이번 달 앞뒤 12개월까지 볼 수 있습니다." /> : (
     <section class="cal-wrap" data-show="all">
       <h1>{title}</h1>
+      {truncated && <p class="hint">{truncated}</p>}
       <p><a href={`/calendar/${prevMonth(ym)}`} rel="prev">← 지난달</a> · <a href={`/calendar/${nextMonth(ym)}`} rel="next">다음 달 →</a></p>
       <div class="cal-filter" role="group" aria-label="일정 거르기">
         <button type="button" data-filter="all" aria-pressed="true">전체</button>
