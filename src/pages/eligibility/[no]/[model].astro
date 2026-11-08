@@ -1,0 +1,29 @@
+---
+// 단지 상세의 공개값(공급 구분·전용면적·공고일)만 경로로 받는다. 사용자 입력은 경로·쿼리에 없다
+import Base from '../../../layouts/Base.astro';
+import NotFound from '../../../components/NotFound.astro';
+import EligibilityForm from '../../../components/EligibilityForm.astro';
+import { KV_KEYS } from '../../../lib/kv-keys';
+import { getJson } from '../../../server/kv';
+import { setPublicCache } from '../../../server/cache';
+import { safeParam } from '../../../lib/view/format';
+import { prefillFromApt } from '../../../lib/view/eligibility-form';
+import type { AptBundle } from '../../../lib/view/bundle-types';
+
+const no = safeParam(Astro.params.no);
+const model = safeParam(Astro.params.model);
+const b = no && model && /^[0-9A-Za-z_-]{1,30}$/.test(no) ? await getJson<AptBundle>(KV_KEYS.apt(no)) : null;
+const prefill = b && model ? prefillFromApt(b, model) : null;
+if (prefill) setPublicCache(Astro.response.headers);
+else Astro.response.status = 404;
+---
+<Base title={b && prefill ? `${b.notice.name} 특별공급 자격 판정` : '공고를 찾을 수 없습니다'} description="단지 공고값을 채운 특별공급 자격 판정" sources={['applyhome']} noindex canonicalPath="/eligibility">
+  {!prefill || !b ? <NotFound message="공고나 주택형을 찾을 수 없습니다. 판정 화면에서 직접 입력할 수 있습니다." /> : (
+    <>
+      <h1>특별공급 자격 판정</h1>
+      <p><a href={`/apt/${encodeURIComponent(b.notice.pblanc_no)}`}>{b.notice.name}</a></p>
+      <EligibilityForm prefill={prefill} title={b.notice.name} />
+    </>
+  )}
+  <script>import '../../../scripts/eligibility-client';</script>
+</Base>

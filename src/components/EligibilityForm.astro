@@ -1,0 +1,61 @@
+---
+// form 태그와 name 속성을 쓰지 않는다 — 제출·주소 쿼리로 값이 나갈 길을 없앤다 (tests/eligibility-no-leak.test.ts)
+import { MAX_CHILDREN, type FormValues } from '../lib/view/eligibility-form';
+import { DISCLAIMER } from '../lib/eligibility';
+interface Props { prefill: FormValues; title: string | null }
+const { prefill, title } = Astro.props;
+const val = (k: string) => prefill[k] ?? '';
+const yesNo = [['', '모름'], ['true', '예'], ['false', '아니오']];
+---
+<section class="elig" data-elig>
+  {title && <p class="hint">{title} 공고값을 채워 두었습니다. 다른 공고로 보려면 고치세요.</p>}
+  <p class="hint">입력값은 이 기기 안에서만 계산하고 어디에도 보내거나 저장하지 않습니다.</p>
+
+  <fieldset><legend>공고</legend>
+    <label>공급 구분 <select data-field="supplyKind">
+      {[['', '선택'], ['national', '국민주택'], ['private', '민영주택']].map(([v, t]) => <option value={v} selected={val('supplyKind') === v}>{t}</option>)}
+    </select></label>
+    <label>전용면적(㎡) <input data-field="areaExcl" inputmode="decimal" value={val('areaExcl')} /></label>
+    <label>입주자모집공고일 <input data-field="noticeDate" type="date" value={val('noticeDate')} /></label>
+    <label>국가·지자체·LH·지방공사 공급 <select data-field="publicBuilder">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+  </fieldset>
+
+  <fieldset><legend>세대</legend>
+    <label>지금 세대의 주택 소유 <select data-field="homeOwner">
+      {[['', '모름'], ['none', '세대 전원 무주택'], ['self_or_spouse', '본인·배우자 소유'], ['other_member', '다른 세대원 소유']].map(([v, t]) => <option value={v}>{t}</option>)}
+    </select></label>
+    <label>과거 주택 소유 이력 <select data-field="everOwned">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+    <label>세대주인가 <select data-field="householdHead">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+    <label>단독세대주·동거인 <select data-field="singleHousehold">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+    <label>혼인신고일(미혼이면 비움) <input data-field="marriageDate" type="date" /></label>
+    <label>세대 구성원 수(태아 포함) <input data-field="householdSize" inputmode="numeric" /></label>
+    <label>자녀 수 <select data-field="childCount">{Array.from({ length: MAX_CHILDREN + 1 }, (_, i) => <option value={String(i)}>{i}명</option>)}</select></label>
+    {Array.from({ length: MAX_CHILDREN }, (_, i) => (
+      <div class="child" data-child={i} hidden>
+        <label>{i + 1}째 <select data-field={`children.${i}.kind`}>{[['born', '출생'], ['fetus', '태아'], ['adopted', '입양']].map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+        <label>생년월일(태아는 출산 예정일) <input data-field={`children.${i}.birth`} type="date" /></label>
+      </div>
+    ))}
+  </fieldset>
+
+  <fieldset><legend>소득·통장</legend>
+    <label>세대 월평균 소득(만원) <input data-field="monthlyIncome" inputmode="numeric" /></label>
+    <label>배우자도 소득이 있다 <select data-field="dualIncome">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+    <label>소득세 납부 연수 <input data-field="incomeTaxYears" inputmode="numeric" /></label>
+    <label>청약통장 가입 개월 <input data-field="savingsMonths" inputmode="numeric" /></label>
+    <label>납입 회차 <input data-field="savingsPayments" inputmode="numeric" /></label>
+    <label>납입 총액(만원) <input data-field="savingsTotal" inputmode="numeric" /></label>
+    <label>본인·배우자 특별공급 당첨 이력 <select data-field="priorSpecial">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+  </fieldset>
+
+  <fieldset><legend>65세 이상 직계존속 부양(해당하면)</legend>
+    <label>생년월일 <input data-field="parentBirth" type="date" /></label>
+    <label>같은 등본에 오른 날 <input data-field="parentSince" type="date" /></label>
+    <label>그 배우자도 무주택 <select data-field="parentSpouseHomeless">{yesNo.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+  </fieldset>
+
+  <button type="button" class="btn" data-judge>판정하기</button>
+  <div data-errors role="alert"></div>
+  <div data-result aria-live="polite"></div>
+  <p class="page-notice">{DISCLAIMER}</p>
+</section>
