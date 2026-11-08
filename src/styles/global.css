@@ -416,3 +416,4 @@ a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible
 .verdict--no { color: #b42318; font-weight: 700; }
 .verdict--check { color: #b54708; font-weight: 700; }
 .field-error { color: #b42318; font-size: 0.85rem; }
+.info { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; } .info dt { color: var(--ink-soft); }

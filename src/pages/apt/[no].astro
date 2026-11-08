@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import NotFound from '../../components/NotFound.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import { KV_KEYS } from '../../lib/kv-keys';
+import { getJson } from '../../server/kv';
+import { setPublicCache } from '../../server/cache';
+import { safeParam } from '../../lib/view/format';
+import { aptView } from '../../lib/view/apt';
+import type { AptBundle } from '../../lib/view/bundle-types';
+
+const no = safeParam(Astro.params.no);
+const bundle = no && /^[0-9A-Za-z_-]{1,30}$/.test(no) ? await getJson<AptBundle>(KV_KEYS.apt(no)) : null;
+const v = bundle ? aptView(bundle) : null;
+if (v) setPublicCache(Astro.response.headers);
+else Astro.response.status = 404;
+---
+<Base title={v ? v.title : '공고를 찾을 수 없습니다'} description={v ? `${v.title} 청약 일정, 주택형별 분양가, 경쟁률, 주변 실거래 비교` : '공고를 찾을 수 없습니다.'} sources={['applyhome', 'competition', 'trade']} noindex={!v}>
+  {!v ? <NotFound message="공고번호를 다시 확인해 주세요. 오래된 공고는 목록에서 빠질 수 있습니다." /> : (
+    <article>
+      <h1>{v.title}</h1>
+      <p>
+        <span class:list={['badge', { 'badge--open': v.phaseLabel === '접수 중' }]}>{v.phaseLabel}</span>
+        {v.corrected && <span class="badge badge--corrected">정정 공고</span>}
+        {v.banner?.kind === 'cancelled' && <span class="badge badge--cancelled">취소</span>}
+        {' '}{v.place}
+      </p>
+      {v.banner && <p class:list={['banner', `banner--${v.banner.kind}`]}>{v.banner.text}</p>}
+      {v.truncated && <p class="hint">내용이 많아 일부 표만 보여 줍니다. 전체는 청약홈 공고에서 확인하세요.</p>}
+
+      <h2>일정</h2>
+      <dl class="info">{v.schedule.map((r) => <><dt>{r.label}</dt><dd class="tabular">{r.value}</dd></>)}</dl>
+      <dl class="info">{v.facts.map((r) => <><dt>{r.label}</dt><dd>{r.value}</dd></>)}</dl>
+
+      <h2>주택형별 분양가</h2>
+      {v.models.length === 0 ? <p class="empty">주택형 자료가 아직 없습니다.</p> : (
+        <div class="table-wrap"><table class="data-table">
+          <thead><tr><th>주택형</th><th>전용면적</th><th class="num">일반</th><th class="num">특공</th><th class="num">최고 분양가</th><th class="num">㎡당(전용)</th><th class="num">평당</th><th></th></tr></thead>
+          <tbody>{v.models.map((m) => (
+            <tr><td>{m.houseTy}</td><td class="num">{m.area}</td><td class="num">{m.general}</td><td class="num">{m.special}</td><td class="num">{m.topPrice}</td><td class="num">{m.perSqm}</td><td class="num">{m.perPyeong}</td>
+              <td><a class="btn btn--ghost" href={m.eligibilityHref}>이 단지로 자격 판정</a></td></tr>
+          ))}</tbody>
+        </table></div>
+      )}
+
+      <h2>주변 시세 비교</h2>
+      {v.models.length === 0 ? <p class="empty">비교할 주택형이 없습니다.</p> : (
+        <ul class="bullets">{v.models.map((m) => <li><strong>{m.houseTy}</strong> {m.nearby}</li>)}</ul>
+      )}
+      <AdSlot />
+
+      <h2>경쟁률</h2>
+      {v.competition.length === 0 ? <p class="empty">경쟁률은 접수가 끝난 뒤 청약홈에 공개됩니다.</p> : (
+        <div class="table-wrap"><table class="data-table">
+          <thead><tr><th>주택형</th><th>순위</th><th>거주</th><th class="num">공급</th><th class="num">접수</th><th class="num">경쟁률</th></tr></thead>
+          <tbody>{v.competition.map((c) => <tr><td>{c.houseTy}</td><td>{c.rank}</td><td>{c.residence}</td><td class="num">{c.supply}</td><td class="num">{c.applicants}</td><td class="num">{c.rate}</td></tr>)}</tbody>
+        </table></div>
+      )}
+
+      <h2>특별공급 신청 현황</h2>
+      {v.special.length === 0 ? <p class="empty">특별공급 신청 현황이 아직 없습니다.</p> : (
+        <div class="table-wrap"><table class="data-table">
+          <thead><tr><th>주택형</th><th>유형</th><th class="num">배정</th><th class="num">접수</th></tr></thead>
+          <tbody>{v.special.map((s) => <tr><td>{s.houseTy}</td><td>{s.type}</td><td class="num">{s.allotted}</td><td class="num">{s.applicants}</td></tr>)}</tbody>
+        </table></div>
+      )}
+
+      {v.presale.length > 0 && (
+        <>
+          <h2>분양권·입주권 거래</h2>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>계약일</th><th>구분</th><th>전용면적</th><th class="num">층</th><th class="num">거래 금액</th></tr></thead>
+            <tbody>{v.presale.map((p) => <tr><td class="num">{p.date}</td><td>{p.kind}{p.cancelled && ' (해제)'}</td><td class="num">{p.area}</td><td class="num">{p.floor}</td><td class="num">{p.amount}</td></tr>)}</tbody>
+          </table></div>
+        </>
+      )}
+
+      {v.lhLinks.length > 0 && <p>LH 공고: {v.lhLinks.map((l) => <a href={l.href} rel="noopener" target="_blank">{l.title}</a>)}</p>}
+      {v.url && <p><a class="btn" href={v.url} rel="noopener" target="_blank">청약홈 공고 보기</a></p>}
+    </article>
+  )}
+</Base>

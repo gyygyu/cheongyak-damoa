@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import NotFound from '../../components/NotFound.astro';
+import { KV_KEYS } from '../../lib/kv-keys';
+import { getJson } from '../../server/kv';
+import { setPublicCache } from '../../server/cache';
+import { safeParam } from '../../lib/view/format';
+import { lhView } from '../../lib/view/lh';
+import { todayKst } from '../../lib/date';
+import type { LhBundle } from '../../lib/view/bundle-types';
+
+const id = safeParam(Astro.params.id);
+const bundle = id && /^[0-9A-Za-z_-]{1,30}$/.test(id) ? await getJson<LhBundle>(KV_KEYS.lh(id)) : null;
+const v = bundle ? lhView(bundle, todayKst()) : null;
+if (v) setPublicCache(Astro.response.headers);
+else Astro.response.status = 404;
+---
+<Base title={v ? v.title : 'LH 공고를 찾을 수 없습니다'} description={v ? `${v.title} 접수 일정과 주택형별 공급·금액` : 'LH 공고를 찾을 수 없습니다.'} sources={['lh']} noindex={!v}>
+  {!v ? <NotFound message="청약홈 공고와 맞춘 LH 공고는 단지 상세에서 볼 수 있습니다." /> : (
+    <article>
+      <h1>{v.title}</h1>
+      <p><span class="badge">{v.isRent ? '임대' : '분양'}</span> <span class="badge">{v.state}</span> {v.place}</p>
+      {v.banner && <p class:list={['banner', `banner--${v.banner.kind}`]}>{v.banner.text}</p>}
+      <h2>일정</h2>
+      <dl class="info">{v.schedule.map((r) => <><dt>{r.label}</dt><dd class="tabular">{r.value}</dd></>)}</dl>
+      <h2>주택형별 공급</h2>
+      {v.supply.length === 0 ? <p class="empty">공급 정보가 아직 없습니다. 공고문을 확인하세요.</p> : (
+        <div class="table-wrap"><table class="data-table">
+          <thead><tr><th>주택형</th><th>전용면적</th><th class="num">세대수</th><th class="num">{v.isRent ? '보증금·임대료' : '공급 금액'}</th></tr></thead>
+          <tbody>{v.supply.map((s) => <tr><td>{s.houseTy}</td><td class="num">{s.area}</td><td class="num">{s.households}</td><td class="num">{s.price}</td></tr>)}</tbody>
+        </table></div>
+      )}
+      {v.url && <p><a class="btn" href={v.url} rel="noopener" target="_blank">LH 청약플러스 공고문</a></p>}
+    </article>
+  )}
+</Base>
