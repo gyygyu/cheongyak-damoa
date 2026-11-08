@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import EventList from '../../components/EventList.astro';
+import { KV_KEYS } from '../../lib/kv-keys';
+import { getJson } from '../../server/kv';
+import { setPublicCache } from '../../server/cache';
+import { todayKst } from '../../lib/date';
+import { nextMonth } from '../../lib/view/calendar';
+import { ipoEvents, IPO_DISCLAIMER } from '../../lib/view/ipo';
+import type { CalendarBundle } from '../../lib/view/bundle-types';
+
+const ym = todayKst().slice(0, 7);
+const rows = ipoEvents(await Promise.all([getJson<CalendarBundle>(KV_KEYS.calendar(ym)), getJson<CalendarBundle>(KV_KEYS.calendar(nextMonth(ym)))]));
+setPublicCache(Astro.response.headers);
+---
+<Base title="공모주 일정" description="공모주 청약·환불·상장·보호예수 해제 일정" sources={['dart', 'fsc']}>
+  <h1>공모주 일정</h1>
+  <p class="hint">{IPO_DISCLAIMER}</p>
+  <EventList rows={rows} empty="공모주 일정 수집을 준비하고 있습니다. 지금은 아파트 청약 일정만 제공합니다." />
+</Base>
