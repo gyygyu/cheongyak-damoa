@@ -3,9 +3,19 @@ import { SOURCE_LABEL, PAGE_NOTICE, type SourceKey } from '../lib/view/sources';
 import { SITE } from '../lib/site-meta';
 interface Props { sources: SourceKey[] }
 const { sources } = Astro.props;
+// 공모주는 자료가 생길 때까지 탭·머리말 메뉴에서 빼고 여기에만 둔다
+const LINKS = [
+  { href: '/competition', label: '경쟁률 모음' },
+  { href: '/region', label: '지역별 공고·실거래' },
+  { href: '/eligibility', label: '자격 판정' },
+  { href: '/ipo', label: '공모주 일정(준비 중)' },
+];
 ---
 <footer class="site-footer">
   <div class="inner">
+    <nav class="footer-links" aria-label="그 밖의 메뉴">
+      {LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    </nav>
     <p class="page-notice">{PAGE_NOTICE}</p>
     {sources.length > 0 && (
       <p class="page-notice">출처: <span data-sources={sources.join(',')}>{sources.map((k) => SOURCE_LABEL[k]).join(' · ')}</span></p>

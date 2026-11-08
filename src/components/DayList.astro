@@ -1,0 +1,32 @@
+---
+// 날짜 머리(D-day) + 그날 일정 줄. 홈 '이번 주 일정'과 캘린더 아래 목록이 같이 쓴다
+import type { CalDay } from '../lib/view/calendar';
+interface Props { days: CalDay[] }
+const { days } = Astro.props;
+---
+<div class="day-list">
+  {days.map((d) => (
+    <section class={`day day--${d.tone}`} id={d.id} aria-labelledby={`${d.id}-h`}>
+      <h3 class="day-head" id={`${d.id}-h`}>
+        <span class="tabular">{d.label}</span>
+        {d.dday && <span class={`dday dday--${d.tone}`}>{d.dday}</span>}
+      </h3>
+      <ul class="rows">
+        {d.rows.map((r) => (
+          <li class="ev" data-group={r.group}>
+            <span class="badge">{r.kindLabel}</span>
+            <span class="ev-main">
+              {r.href ? <a class="ev-title" href={r.href}>{r.title}</a> : <span class="ev-title">{r.title}</span>}
+              {(r.meta || r.note) && (
+                <span class="ev-meta">
+                  {r.meta && <span class="tabular">{r.meta}</span>}
+                  {r.note && <span class={`dday dday--${r.noteTone}`}>{r.note}</span>}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>

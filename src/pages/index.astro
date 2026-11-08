@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import EventList from '../components/EventList.astro';
+import DayList from '../components/DayList.astro';
+import Icon from '../components/Icon.astro';
 import AdSlot from '../components/AdSlot.astro';
 import { SITE } from '../lib/site-meta';
 import { KV_KEYS } from '../lib/kv-keys';
@@ -11,28 +12,70 @@ import { todayKst } from '../lib/date';
 import { truncatedNotice } from '../lib/view/truncated';
 import type { HomeBundle } from '../lib/view/bundle-types';
 
+// KV 묶음은 home 하나만 읽는다. D-day 는 묶음 만든 날이 아니라 오늘(한국 날짜) 기준
 const bundle = await getJson<HomeBundle>(KV_KEYS.home);
 const truncated = truncatedNotice(bundle);
-const v = homeView(bundle, bundle?.today ?? todayKst());
+const v = homeView(bundle, todayKst());
 setPublicCache(Astro.response.headers);
+
+const ENTRIES = [
+  { href: '/competition', title: '경쟁률 모음', desc: '최근 공고의 주택형별 청약 경쟁률' },
+  { href: '/region', title: '지역별 공고·실거래', desc: '시도·시군구별 최근 공고와 아파트 실거래가' },
+  { href: '/eligibility', title: '청약 자격 판정', desc: '조건을 넣으면 공급 유형별 가능 여부를 봅니다' },
+];
 ---
 <Base title={SITE.name} description={SITE.tagline} sources={['applyhome', 'competition', 'lh']}>
-  <h1>오늘의 청약 일정</h1>
+  <div class="page-head">
+    <div>
+      <h1>이번 주 청약 일정</h1>
+      <p class="page-purpose">청약홈·LH 공고의 접수와 당첨자 발표를 날짜순으로 모았습니다.</p>
+    </div>
+    <p class="page-stats">
+      <span class="tabular">{v.todayText} 기준</span>
+      <span>이번 주 접수 <strong>{v.stats.receipts}</strong>건</span>
+      <span>발표 <strong>{v.stats.winners}</strong>건</span>
+    </p>
+  </div>
   {truncated && <p class="hint">{truncated}</p>}
-  <p class="tabular">{v.today} 기준 · <a href={`/calendar/${v.today.slice(0, 7)}`}>이번 달 캘린더</a></p>
-  <h2>오늘 진행 중</h2>
-  <EventList rows={v.todayRows} empty="오늘 진행 중인 일정이 없습니다." />
-  <h2>마감 임박</h2>
-  <EventList rows={v.closingRows} empty="이틀 안에 끝나는 접수가 없습니다." />
+
+  <section aria-labelledby="week-h">
+    <div class="section-head">
+      <h2 id="week-h">이번 주 일정</h2>
+      <a class="more-link" href={v.calendarHref}>전체 일정 보기<Icon name="arrow-right" size={16} /></a>
+    </div>
+    {v.days.length === 0 ? <p class="empty">이번 주 예정된 일정이 없습니다.</p> : <DayList days={v.days} />}
+    {v.more > 0 && (
+      <p class="more-row"><a class="more-link" href={v.calendarHref}>나머지 {v.more}건은 캘린더에서 보기<Icon name="arrow-right" size={16} /></a></p>
+    )}
+  </section>
+
   <AdSlot />
-  <h2>이번 주 예정</h2>
-  <EventList rows={v.weekRows} empty="이번 주 예정된 일정이 없습니다." />
-  <h2>최근 경쟁률</h2>
-  {v.top.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
-    <div class="table-wrap"><table class="data-table">
-      <thead><tr><th>단지</th><th>지역</th><th class="num">최고 경쟁률</th></tr></thead>
-      <tbody>{v.top.map((t) => <tr><td><a href={t.href}>{t.name}</a></td><td>{t.place}</td><td class="num">{t.rate}</td></tr>)}</tbody>
-    </table></div>
-  )}
-  <p><a href="/competition">경쟁률 모음 보기</a></p>
+
+  <section aria-labelledby="comp-h">
+    <div class="section-head">
+      <h2 id="comp-h">최근 경쟁률</h2>
+      <a class="more-link" href="/competition">경쟁률 모음<Icon name="arrow-right" size={16} /></a>
+    </div>
+    {v.top.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
+      <div class="table-wrap"><table class="data-table data-table--stack">
+        <thead><tr><th>단지</th><th>지역</th><th class="num">최고 경쟁률</th></tr></thead>
+        <tbody>{v.top.map((t) => (
+          <tr>
+            <td class="cell-title"><a href={t.href}>{t.name}</a></td>
+            <td data-label="지역">{t.place}</td>
+            <td class="num cell-key" data-label="최고 경쟁률">{t.rate}</td>
+          </tr>
+        ))}</tbody>
+      </table></div>
+    )}
+  </section>
+
+  <section aria-labelledby="more-h">
+    <h2 id="more-h">더 찾아보기</h2>
+    <ul class="entry-links">
+      {ENTRIES.map((e) => (
+        <li><a href={e.href}><span><strong>{e.title}</strong><span class="entry-desc">{e.desc}</span></span><Icon name="arrow-right" size={18} /></a></li>
+      ))}
+    </ul>
+  </section>
 </Base>

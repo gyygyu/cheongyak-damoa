@@ -1,9 +1,13 @@
 ---
+import Icon from './Icon.astro';
 import { NAV_ITEMS, navActive } from '../lib/nav';
 const path = Astro.url.pathname;
 ---
 <nav class="tabbar" aria-label="하단 탭">
   {NAV_ITEMS.map((item) => (
-    <a href={item.href} aria-current={navActive(path, item.href) ? 'page' : undefined}><span>{item.label}</span></a>
+    <a href={item.href} aria-current={navActive(path, item.href) ? 'page' : undefined}>
+      <span class="tab-icon"><Icon name={item.icon} size={22} /></span>
+      <span class="tab-label">{item.label}</span>
+    </a>
   ))}
 </nav>
