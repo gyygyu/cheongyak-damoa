@@ -82,7 +82,7 @@ const toTradeRecord = (r: DbRow): TradeRecord => ({
   amount: n(r.amount) ?? 0, buildYear: n(r.build_year), cancelled: r.cancelled === 1,
 });
 
-interface CompSummary { pblancNo: string; name: string | null; sido: string | null; sigungu: string | null; noticeDate: string | null; maxRate: number | null; applicants: number; supply: number }
+interface CompSummary { pblancNo: string; name: string | null; sido: string | null; sigungu: string | null; noticeDate: string | null; maxRate: number | null; applicants: number; supply: number; models: number; shortModels: number }
 
 function competitionSummaries(ds: Dataset): CompSummary[] {
   const byNotice = groupBy(ds.competition, (r) => s(r.pblanc_no));
@@ -91,11 +91,22 @@ function competitionSummaries(ds: Dataset): CompSummary[] {
     const rows = byNotice.get(s(nt.pblanc_no) ?? '');
     if (!rows) continue;
     const rates = rows.map((r) => n(r.rate)).filter((v): v is number => v !== null);
+    // 실응답(getAPTLttotPblancCmpet)은 순위·거주 구분 줄마다 그 주택형의 일반공급 세대수(SUPLY_HSHLDCO)를 되풀이한다.
+    // 공급은 주택형마다 한 번만 센다(줄을 다 더하면 4~6배로 부풀었다). 접수는 줄마다 다른 신청이라 다 더한다
+    const byModel = groupBy(rows, (r) => s(r.model_no));
+    let supply = 0;
+    let shortModels = 0;
+    for (const list of byModel.values()) {
+      const sup = Math.max(0, ...list.map((r) => n(r.supply_count) ?? 0));
+      const req = list.reduce((a, r) => a + (n(r.applicants) ?? 0), 0);
+      supply += sup;
+      if (sup > 0 && req < sup) shortModels++; // 미달: 1·2순위 접수를 다 더해도 공급 세대수보다 적은 주택형
+    }
     out.push({
       pblancNo: s(nt.pblanc_no)!, name: s(nt.name), sido: s(nt.sido), sigungu: s(nt.sigungu), noticeDate: s(nt.notice_date),
       maxRate: rates.length ? Math.max(...rates) : null,
       applicants: rows.reduce((a, r) => a + (n(r.applicants) ?? 0), 0),
-      supply: rows.reduce((a, r) => a + (n(r.supply_count) ?? 0), 0),
+      supply, models: byModel.size, shortModels,
     });
   }
   return out.sort((a, b) => (b.noticeDate ?? '').localeCompare(a.noticeDate ?? '') || a.pblancNo.localeCompare(b.pblancNo));

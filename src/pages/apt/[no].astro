@@ -6,7 +6,8 @@ import { KV_KEYS } from '../../lib/kv-keys';
 import { getJson } from '../../server/kv';
 import { setPublicCache } from '../../server/cache';
 import { safeParam } from '../../lib/view/format';
-import { aptView } from '../../lib/view/apt';
+import { aptView, aptStages } from '../../lib/view/apt';
+import { todayKst } from '../../lib/date';
 import { truncatedNotice } from '../../lib/view/truncated';
 import type { AptBundle } from '../../lib/view/bundle-types';
 
@@ -14,25 +15,60 @@ const no = safeParam(Astro.params.no);
 const bundle = no && /^[0-9A-Za-z_-]{1,30}$/.test(no) ? await getJson<AptBundle>(KV_KEYS.apt(no)) : null;
 const v = bundle ? aptView(bundle) : null;
 const truncated = truncatedNotice(bundle);
+// 단계는 요청 시점(한국 날짜) 기준. 취소 공고는 단계 표시를 하지 않는다
+const stages = bundle && bundle.phase !== 'cancelled' ? aptStages(bundle.notice, todayKst()) : [];
 if (v) setPublicCache(Astro.response.headers);
 else Astro.response.status = 404;
 ---
 <Base title={v ? v.title : '공고를 찾을 수 없습니다'} description={v ? `${v.title} 청약 일정, 주택형별 분양가, 경쟁률, 주변 실거래 비교` : '공고를 찾을 수 없습니다.'} sources={['applyhome', 'competition', 'trade']} noindex={!v}>
   {!v ? <NotFound message="공고번호를 다시 확인해 주세요. 오래된 공고는 목록에서 빠질 수 있습니다." /> : (
     <article>
-      <h1>{v.title}</h1>
-      <p>
-        <span class:list={['badge', { 'badge--open': v.phaseLabel === '접수 중' }]}>{v.phaseLabel}</span>
-        {v.corrected && <span class="badge badge--corrected">정정 공고</span>}
-        {v.banner?.kind === 'cancelled' && <span class="badge badge--cancelled">취소</span>}
-        {' '}{v.place}
-      </p>
+      <header class="apt-head">
+        <h1>{v.title}</h1>
+        <div class="apt-meta">
+          <p>
+            <span class:list={['badge', { 'badge--open': v.phaseLabel === '접수 중' }]}>{v.phaseLabel}</span>
+            {v.corrected && <span class="badge badge--corrected">정정 공고</span>}
+            {v.banner?.kind === 'cancelled' && <span class="badge badge--cancelled">취소</span>}
+            {' '}{v.place}
+          </p>
+          {v.url && (
+            <a class="btn btn--ghost" href={v.url} rel="noopener" target="_blank">
+              청약홈 공고 보기
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+              <span class="sr-only">(새 창)</span>
+            </a>
+          )}
+        </div>
+      </header>
       {v.banner && <p class:list={['banner', `banner--${v.banner.kind}`]}>{v.banner.text}</p>}
       {truncated && <p class="hint">{truncated}</p>}
 
       <h2>일정</h2>
-      <dl class="info">{v.schedule.map((r) => <><dt>{r.label}</dt><dd class="tabular">{r.value}</dd></>)}</dl>
-      <dl class="info">{v.facts.map((r) => <><dt>{r.label}</dt><dd>{r.value}</dd></>)}</dl>
+      {stages.length > 0 ? (
+        <ol class="stages" style={`--stage-count: ${stages.length}`}>
+          {stages.map((st, i) => (
+            <li class:list={['stage', `stage--${st.state}`]} aria-current={st.state === 'current' ? 'step' : undefined}>
+              <span class="stage-dot" aria-hidden="true">
+                {st.state === 'done'
+                  ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                  : i + 1}
+              </span>
+              <span class="stage-text">
+                <span class="stage-label">{st.label}</span>
+                <span class="stage-date">{st.date}</span>
+                <span class="stage-state">{st.stateLabel}{st.dday && ` · ${st.dday}`}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <dl class="info">{v.schedule.map((r) => <><dt>{r.label}</dt><dd class="tabular">{r.value}</dd></>)}</dl>
+      )}
+      <dl class="info">
+        {stages.length > 0 && v.moveIn && <><dt>입주 예정</dt><dd>{v.moveIn}</dd></>}
+        {v.facts.map((r) => <><dt>{r.label}</dt><dd>{r.value}</dd></>)}
+      </dl>
 
       <h2>주택형별 분양가</h2>
       {v.models.length === 0 ? <p class="empty">주택형 자료가 아직 없습니다.</p> : (
@@ -104,7 +140,47 @@ else Astro.response.status = 404;
       )}
 
       {v.lhLinks.length > 0 && <p>LH 공고: {v.lhLinks.map((l) => <a href={l.href} rel="noopener" target="_blank">{l.title}</a>)}</p>}
-      {v.url && <p><a class="btn" href={v.url} rel="noopener" target="_blank">청약홈 공고 보기</a></p>}
     </article>
   )}
 </Base>
+
+<style>
+  /* 제목 줄: 단계 배지·주소 + 청약홈 공식 공고 바로가기 */
+  .apt-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; }
+  .apt-meta p { margin: 0; }
+
+  /* 단계 표시 — 지난 단계 채움(무채색), 진행 중 = 강조색 채움, 다음 단계 = 강조색 테두리. 상태는 글자로도 적는다 */
+  .stages { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(var(--stage-count, 6), minmax(0, 1fr)); }
+  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 4px; text-align: center; }
+  /* 이음선: 각 단계에서 다음 단계 쪽으로. 지난 단계 뒤의 선은 진하게 */
+  .stage:not(:last-child)::after {
+    content: ''; position: absolute; top: 15px; left: 50%; width: 100%; height: 2px; background: var(--line-strong); z-index: 0;
+  }
+  .stage--done:not(:last-child)::after { background: var(--ink-2); }
+  .stage-dot {
+    position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none;
+    border-radius: 50%; border: 2px solid var(--line-strong); background: var(--bg); color: var(--muted);
+    font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .stage--done .stage-dot { border-color: var(--ink-2); background: var(--ink-2); color: #fff; }
+  .stage--current .stage-dot { border-color: var(--brand); background: var(--brand); color: #fff; box-shadow: 0 0 0 4px var(--brand-weak); }
+  .stage--next .stage-dot { border-color: var(--brand); color: var(--brand-text); }
+  .stage-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stage-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .stage-date { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; word-break: keep-all; }
+  .stage-state { font-size: 13px; color: var(--muted); }
+  .stage--current .stage-label, .stage--current .stage-state { color: var(--brand-text); }
+  .stage--current .stage-state { font-weight: 600; }
+  .stage--next .stage-state { color: var(--brand-text); }
+  .stage--done .stage-label { color: var(--ink-2); font-weight: 500; }
+
+  /* 휴대폰: 세로 줄 — 동그라미 왼쪽, 글자 오른쪽 */
+  @media (max-width: 760px) {
+    .stages { grid-template-columns: 1fr; }
+    .stage { flex-direction: row; align-items: flex-start; gap: 12px; padding: 0 0 16px; text-align: left; }
+    .stage:last-child { padding-bottom: 0; }
+    .stage:not(:last-child)::after { top: 32px; bottom: 0; left: 15px; width: 2px; height: auto; }
+    .stage-text { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding-top: 5px; }
+    .stage-state { flex-basis: 100%; }
+  }
+</style>

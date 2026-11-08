@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aptView, perSqmPrice, nearbyText, BANNED_WORDS } from '../src/lib/view/apt';
+import { aptView, aptStages, perSqmPrice, nearbyText, BANNED_WORDS } from '../src/lib/view/apt';
 import type { AptBundle } from '../src/lib/view/bundle-types';
 
 const bundle = (over: Partial<AptBundle> = {}): AptBundle => ({
@@ -90,5 +90,54 @@ describe('aptView', () => {
     const b = bundle();
     b.models[0].special_counts = '{x';
     expect(aptView(b).models[0].special).toBe('-');
+  });
+});
+
+describe('aptStages (단계 표시: 공고 → 특별공급 → 1순위 → 2순위 → 발표 → 계약)', () => {
+  const nt = bundle().notice; // 특별공급 일정 없음, 1순위 11.16~11.26, 2순위 11.27, 발표 12.08, 계약 2027.03.11~14
+  const states = (today: string, n = nt) => aptStages(n, today).map((s) => s.state);
+  it('일정이 없는 단계는 빼고, 날짜는 공고 연도와 다를 때만 연도를 붙인다', () => {
+    const st = aptStages(nt, '2026-11-20');
+    expect(st.map((s) => s.label)).toEqual(['공고', '1순위', '2순위', '당첨자 발표', '계약']);
+    expect(st.map((s) => s.date)).toEqual(['11.06(금)', '11.16(월) ~ 11.26(목)', '11.27(금)', '12.08(화)', '2027.03.11(목) ~ 03.14(일)']);
+  });
+  it('오늘이 기간 안이면 그 단계가 진행 중, 앞은 지남, 뒤는 예정', () => {
+    const st = aptStages(nt, '2026-11-20');
+    expect(st.map((s) => s.state)).toEqual(['done', 'current', 'upcoming', 'upcoming', 'upcoming']);
+    expect(st.map((s) => s.stateLabel)).toEqual(['지남', '진행 중', '예정', '예정', '예정']);
+    expect(states('2026-11-16')[1]).toBe('current');
+    expect(states('2026-11-26')[1]).toBe('current');
+  });
+  it('단계 사이 빈 날에는 다음 단계를 next 로, 남은 날을 붙인다', () => {
+    const st = aptStages(nt, '2026-11-30');
+    expect(st.map((s) => s.state)).toEqual(['done', 'done', 'done', 'next', 'upcoming']);
+    expect(st[3]).toMatchObject({ stateLabel: '예정', dday: 'D-8' });
+    expect(st[4].dday).toBeNull();
+  });
+  it('공고 전이면 공고가 next, 계약이 끝나면 모두 지남', () => {
+    expect(states('2026-11-01')).toEqual(['next', 'upcoming', 'upcoming', 'upcoming', 'upcoming']);
+    expect(aptStages(nt, '2026-11-01')[0].dday).toBe('D-5');
+    expect(states('2027-03-15')).toEqual(['done', 'done', 'done', 'done', 'done']);
+  });
+  it('특별공급 일정이 있으면 공고 다음에 넣는다', () => {
+    const n = { ...nt, special_start: '2026-11-13', special_end: '2026-11-13' };
+    expect(aptStages(n, '2026-11-13').map((s) => [s.label, s.state])).toEqual([
+      ['공고', 'done'], ['특별공급', 'current'], ['1순위', 'upcoming'], ['2순위', 'upcoming'], ['당첨자 발표', 'upcoming'], ['계약', 'upcoming'],
+    ]);
+  });
+  it('종료일만 있거나 시작일만 있어도 하루짜리로 본다', () => {
+    const n = { ...nt, rank2_start: null, rank2_end: '2026-11-27', contract_end: null };
+    const st = aptStages(n, '2027-03-11');
+    expect(st.map((s) => s.date)).toEqual(['11.06(금)', '11.16(월) ~ 11.26(목)', '11.27(금)', '12.08(화)', '2027.03.11(목)']);
+    expect(st.at(-1)?.state).toBe('current');
+  });
+});
+
+describe('aptView 입주 예정·공식 공고', () => {
+  it('입주 예정 연월을 따로 준다', () => {
+    expect(aptView(bundle()).moveIn).toBe('2029.09');
+    const b = bundle();
+    b.notice.move_in_ym = null;
+    expect(aptView(b).moveIn).toBeNull();
   });
 });

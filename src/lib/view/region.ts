@@ -1,5 +1,5 @@
 // 경쟁률 모음·지역·실거래 화면 (spec §7)
-import type { CompetitionBundle, AccountRow, NoticeSummary, SidoBundle, SigunguBundle, TradeBundle, TradeItem } from './bundle-types';
+import type { CompSummary, CompetitionBundle, AccountRow, NoticeSummary, SidoBundle, SigunguBundle, TradeBundle, TradeItem } from './bundle-types';
 import { SIDO_ALIAS } from '../region/lawd';
 import { formatArea, formatManwon } from '../units';
 import { formatDay, formatRate, formatCount, PHASE_LABEL } from './format';
@@ -7,17 +7,40 @@ import { hrefOf } from './calendar';
 
 export const SIDO_LIST: string[] = [...new Set(Object.values(SIDO_ALIAS))];
 
+// /region/{이름} 의 이름 → 대표 시도 이름(SIDO_LIST 값). 짧은 이름·옛 이름은 lawd.ts SIDO_ALIAS 와 아래 '…시' 꼴.
+// '광주시'는 경기도 광주시와 겹쳐 받지 않는다. 모르는 이름은 null(→ 404)
+const SIDO_EXTRA: Record<string, string> = {
+  서울시: '서울특별시', 부산시: '부산광역시', 대구시: '대구광역시', 인천시: '인천광역시', 대전시: '대전광역시', 울산시: '울산광역시',
+  광주전남: '전남광주통합특별시', 전남광주: '전남광주통합특별시',
+};
+export function resolveSido(name: string): string | null {
+  const t = name.normalize('NFC').trim();
+  if (!t) return null;
+  if (SIDO_LIST.includes(t)) return t;
+  return SIDO_ALIAS[t] ?? SIDO_EXTRA[t] ?? null;
+}
+
 export const regionHref = (sido: string, sigungu?: string): string =>
   `/region/${encodeURIComponent(sido)}${sigungu ? `/${encodeURIComponent(sigungu)}` : ''}`;
 export const tradeHref = (lawdCd: string, dong: string): string => `/trade/${encodeURIComponent(lawdCd)}/${encodeURIComponent(dong)}`;
 
 const place = (a: string | null, b: string | null) => [a, b].filter(Boolean).join(' ');
 
+// 미달 배지: 모든 주택형이 접수 < 공급이면 '미달', 일부면 '일부 미달'. 경쟁률 숫자가 없으면 '-' 대신 배지만 보인다
+function shortLabel(c: CompSummary): '미달' | '일부 미달' | null {
+  if (!c.models || !c.shortModels) return null;
+  return c.shortModels >= c.models ? '미달' : '일부 미달';
+}
+
 export function competitionRows(b: CompetitionBundle | null) {
-  return (b?.items ?? []).map((c) => ({
-    name: c.name ?? c.pblancNo, href: hrefOf(`apt:${c.pblancNo}`) ?? '/competition', place: place(c.sido, c.sigungu),
-    noticeDate: formatDay(c.noticeDate), rate: formatRate(c.maxRate, null), applicants: formatCount(c.applicants), supply: formatCount(c.supply),
-  }));
+  return (b?.items ?? []).map((c) => {
+    const short = shortLabel(c);
+    return {
+      name: c.name ?? c.pblancNo, href: hrefOf(`apt:${c.pblancNo}`) ?? '/competition', place: place(c.sido, c.sigungu),
+      noticeDate: formatDay(c.noticeDate), rate: c.maxRate === null && short ? '' : formatRate(c.maxRate, null),
+      applicants: formatCount(c.applicants), supply: formatCount(c.supply), short,
+    };
+  });
 }
 
 // BLNC_SECD — 실응답(sync/fixtures/account-stats)으로 확인한 값만 적는다. 나머지는 코드 그대로
@@ -70,34 +93,39 @@ export function dongRows(b: SigunguBundle) {
   return b.dongs.map((d) => ({ dong: d.dong, href: tradeHref(d.lawdCd, d.dong), count: formatCount(d.count), last: formatDay(d.last || null) }));
 }
 
+export interface TradeRow { area: string; date: string; floor: string; amount: string; cancelled: boolean }
 export interface TradeView {
   title: string;
-  complexes: { name: string; buildYear: string; areas: { area: string; rows: { date: string; floor: string; amount: string; cancelled: boolean }[] }[] }[];
+  period: string | null; // 묶음에 실제로 든 계약 달 (예: '2026년 10월', '2026.08–10')
+  complexes: { name: string; buildYear: string; rows: TradeRow[] }[];
 }
 
 const byDateDesc = (a: TradeItem, b: TradeItem) => (b.date ?? '').localeCompare(a.date ?? '');
 
+// 실거래 묶음은 최근 12개월 창으로 만들지만, 과거 자료를 채우는 중이라 실제로 든 달만 적는다
+export function tradePeriod(b: TradeBundle): string | null {
+  const months = b.complexes.flatMap((c) => c.trades.map((t) => t.date?.slice(0, 7) ?? '')).filter((m) => /^\d{4}-\d{2}$/.test(m)).sort();
+  if (!months.length) return null;
+  const [first, last] = [months[0], months.at(-1)!];
+  if (first === last) return `${first.slice(0, 4)}년 ${Number(first.slice(5))}월`;
+  const dot = (m: string) => m.replace('-', '.');
+  return `${dot(first)}–${first.slice(0, 4) === last.slice(0, 4) ? last.slice(5) : dot(last)}`;
+}
+
+// 단지마다 표 하나: 면적 작은 것부터, 같은 면적은 최근 거래 먼저
 export function tradeView(b: TradeBundle): TradeView {
+  const areaKey = (t: TradeItem) => (t.area === null ? Infinity : Math.round(t.area * 100) / 100);
   return {
     title: `${b.dong} 아파트 실거래`,
-    complexes: b.complexes.map((c) => {
-      const groups = new Map<number | null, TradeItem[]>();
-      for (const t of c.trades) {
-        const k = t.area === null ? null : Math.round(t.area * 100) / 100;
-        groups.set(k, [...(groups.get(k) ?? []), t]);
-      }
-      const keys = [...groups.keys()].sort((x, y) => (x ?? Infinity) - (y ?? Infinity));
-      return {
-        name: c.name,
-        buildYear: c.buildYear !== null ? `${c.buildYear}년 준공` : '-',
-        areas: keys.map((k) => ({
-          area: k === null ? '-' : formatArea(k),
-          rows: [...(groups.get(k) ?? [])].sort(byDateDesc).map((t) => ({
-            date: formatDay(t.date), floor: t.floor !== null ? `${t.floor}층` : '-',
-            amount: t.amount !== null ? formatManwon(t.amount) : '-', cancelled: t.cancelled,
-          })),
-        })),
-      };
-    }),
+    period: tradePeriod(b),
+    complexes: b.complexes.map((c) => ({
+      name: c.name,
+      buildYear: c.buildYear !== null ? `${c.buildYear}년 준공` : '-',
+      rows: [...c.trades].sort((x, y) => areaKey(x) - areaKey(y) || byDateDesc(x, y)).map((t) => ({
+        area: t.area === null ? '-' : formatArea(Math.round(t.area * 100) / 100),
+        date: formatDay(t.date), floor: t.floor !== null ? `${t.floor}층` : '-',
+        amount: t.amount !== null ? formatManwon(t.amount) : '-', cancelled: t.cancelled,
+      })),
+    })),
   };
 }

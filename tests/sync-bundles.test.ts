@@ -101,6 +101,21 @@ describe('buildBundles', () => {
     expect(c.items.map((i: { pblancNo: string }) => i.pblancNo)).toEqual(['P1', 'P0']);
     expect(c.items[1].maxRate).toBeNull();
   });
+
+  it('공급은 주택형마다 한 번만 센다 — 실응답은 순위·거주 줄마다 같은 주택형 공급 세대수를 되풀이한다', () => {
+    // sync/fixtures/applyhome-cmpet/competition.json: 2026000532 주택형 01 의 1순위 해당·기타, 2순위 해당 줄이 모두 SUPLY_HSHLDCO 116
+    const ds = base();
+    ds.competition = [
+      { pblanc_no: 'P1', model_no: '01', rank: 1, residence: 'local', supply_count: 46, applicants: 0, rate: null, rate_text: '(△46)' },
+      { pblanc_no: 'P1', model_no: '01', rank: 1, residence: 'other', supply_count: 46, applicants: 0, rate: null, rate_text: '(△46)' },
+      { pblanc_no: 'P1', model_no: '01', rank: 2, residence: 'local', supply_count: 46, applicants: 1, rate: null, rate_text: '(△45)' },
+      { pblanc_no: 'P1', model_no: '01', rank: 2, residence: 'other', supply_count: 46, applicants: 1, rate: null, rate_text: '(△44)' },
+      { pblanc_no: 'P1', model_no: '02', rank: 1, residence: 'local', supply_count: 11, applicants: 30, rate: 2.73, rate_text: '2.73' },
+      { pblanc_no: 'P1', model_no: '02', rank: 1, residence: 'other', supply_count: 11, applicants: 5, rate: null, rate_text: '-' },
+    ];
+    const item = get(buildBundles(ds, ctx), 'competition').items[0];
+    expect(item).toMatchObject({ supply: 57, applicants: 37, maxRate: 2.73, models: 2, shortModels: 1 });
+  });
 });
 
 describe('fitValue', () => {

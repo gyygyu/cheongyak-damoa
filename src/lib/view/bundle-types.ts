@@ -36,7 +36,8 @@ export interface LhSupplyRow { lh_id: string; supply_type: S; house_ty: S; area_
 export interface LhBundle { notice: LhNoticeRow; supply: LhSupplyRow[]; truncated?: boolean }
 
 export interface CalendarBundle { month: string; events: CalendarEvent[]; truncated?: boolean }
-export interface CompSummary { pblancNo: string; name: S; sido: S; sigungu: S; noticeDate: S; maxRate: N; applicants: number; supply: number }
+// supply 는 주택형별 일반공급 세대수 합, models·shortModels(접수 < 공급인 주택형 수)는 2026-11-08 이후 묶음에만 있다
+export interface CompSummary { pblancNo: string; name: S; sido: S; sigungu: S; noticeDate: S; maxRate: N; applicants: number; supply: number; models?: number; shortModels?: number }
 export interface HomeBundle { today: string; events: CalendarEvent[]; topCompetition: CompSummary[]; truncated?: boolean }
 export interface CompetitionBundle { items: CompSummary[]; truncated?: boolean }
 

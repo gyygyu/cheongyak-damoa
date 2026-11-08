@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { SIDO_LIST, regionHref, tradeHref, competitionRows, accountRows, sidoAccountRows, sidoAccount, ACCOUNT_GROUP_SIDO, noticeRows, sigunguLinks, dongRows, tradeView } from '../src/lib/view/region';
+import { SIDO_LIST, resolveSido, tradePeriod, regionHref, tradeHref, competitionRows, accountRows, sidoAccountRows, sidoAccount, ACCOUNT_GROUP_SIDO, noticeRows, sigunguLinks, dongRows, tradeView } from '../src/lib/view/region';
 
 describe('시도 목록', () => {
   it('16개, 통합 시도 이름 포함', () => {
@@ -19,7 +19,17 @@ describe('시도 목록', () => {
 describe('경쟁률 모음', () => {
   it('최고 경쟁률·접수·공급', () => {
     const rows = competitionRows({ items: [{ pblancNo: 'P1', name: '과천 A', sido: '경기도', sigungu: '과천시', noticeDate: '2026-10-01', maxRate: 120.5, applicants: 12050, supply: 100 }] });
-    expect(rows[0]).toEqual({ name: '과천 A', href: '/apt/P1', place: '경기도 과천시', noticeDate: '2026.10.01(목)', rate: '120.5 : 1', applicants: '12,050', supply: '100' });
+    expect(rows[0]).toEqual({ name: '과천 A', href: '/apt/P1', place: '경기도 과천시', noticeDate: '2026.10.01(목)', rate: '120.5 : 1', applicants: '12,050', supply: '100', short: null });
+  });
+  it('모든 주택형이 접수 < 공급이면 미달, 일부면 일부 미달 (경쟁률 숫자가 없으면 - 대신 배지만)', () => {
+    const item = { pblancNo: 'P1', name: 'a', sido: null, sigungu: null, noticeDate: null, applicants: 2, supply: 57 };
+    expect(competitionRows({ items: [{ ...item, maxRate: null, models: 2, shortModels: 2 }] })[0]).toMatchObject({ rate: '', short: '미달' });
+    expect(competitionRows({ items: [{ ...item, maxRate: 3.2, models: 4, shortModels: 1 }] })[0]).toMatchObject({ rate: '3.2 : 1', short: '일부 미달' });
+    expect(competitionRows({ items: [{ ...item, maxRate: 3.2, models: 4, shortModels: 0 }] })[0].short).toBeNull();
+  });
+  it('옛 묶음(주택형 수 없음)은 배지 없이 예전처럼', () => {
+    const item = { pblancNo: 'P1', name: 'a', sido: null, sigungu: null, noticeDate: null, applicants: 2, supply: 57, maxRate: null };
+    expect(competitionRows({ items: [item] })[0]).toMatchObject({ rate: '-', short: null });
   });
   it('묶음이 없거나 비면 빈 배열 (Review Focus 3)', () => {
     expect(competitionRows(null)).toEqual([]);
@@ -135,12 +145,66 @@ describe('tradeView', () => {
     expect(v.title).toBe('대치동 아파트 실거래');
     const c = v.complexes[0];
     expect(c.buildYear).toBe('2015년 준공');
-    expect(c.areas.map((a) => a.area)).toEqual(['59.9㎡(18평)', '84.97㎡(26평)']);
-    expect(c.areas[1].rows.map((r) => r.date)).toEqual(['2026.10.09(금)', '2026.10.01(목)']);
-    expect(c.areas[0].rows[0]).toMatchObject({ amount: '20억원', cancelled: true });
+    expect(c.rows.map((r) => r.area)).toEqual(['59.9㎡(18평)', '84.97㎡(26평)', '84.97㎡(26평)']);
+    expect(c.rows.slice(1).map((r) => r.date)).toEqual(['2026.10.09(금)', '2026.10.01(목)']);
+    expect(c.rows[0]).toMatchObject({ amount: '20억원', cancelled: true });
   });
   it('면적·금액 없는 거래도 깨지지 않는다', () => {
     const v = tradeView({ lawdCd: '1', dong: 'x', complexes: [{ name: 'a', buildYear: null, trades: [{ date: null, area: null, floor: null, amount: null, cancelled: false }] }] });
-    expect(v.complexes[0].areas[0]).toMatchObject({ area: '-', rows: [{ date: '-', floor: '-', amount: '-', cancelled: false }] });
+    expect(v.complexes[0].rows).toEqual([{ area: '-', date: '-', floor: '-', amount: '-', cancelled: false }]);
+    expect(v.period).toBeNull();
+  });
+});
+
+describe('resolveSido (짧은 이름 → 대표 시도 이름, /region 301 용)', () => {
+  it('대표 이름은 그대로', () => {
+    for (const s of SIDO_LIST) expect(resolveSido(s)).toBe(s);
+  });
+  it('흔히 쓰는 짧은 이름·옛 이름', () => {
+    expect(resolveSido('서울')).toBe('서울특별시');
+    expect(resolveSido('서울시')).toBe('서울특별시');
+    expect(resolveSido('부산')).toBe('부산광역시');
+    expect(resolveSido('경기')).toBe('경기도');
+    expect(resolveSido('세종')).toBe('세종특별자치시');
+    expect(resolveSido('강원도')).toBe('강원특별자치도');
+    expect(resolveSido('전라북도')).toBe('전북특별자치도');
+    expect(resolveSido('제주')).toBe('제주특별자치도');
+  });
+  it('광주·전남은 통합 시도로', () => {
+    for (const n of ['광주', '광주광역시', '전남', '전라남도']) expect(resolveSido(n)).toBe('전남광주통합특별시');
+  });
+  it('앞뒤 공백은 무시, 모르는 이름·경기 광주시처럼 겹치는 이름은 null', () => {
+    expect(resolveSido(' 서울 ')).toBe('서울특별시');
+    expect(resolveSido('광주시')).toBeNull();
+    expect(resolveSido('강남구')).toBeNull();
+    expect(resolveSido('')).toBeNull();
+  });
+});
+
+describe('tradePeriod (실거래 화면 기간 글)', () => {
+  const b = (dates: (string | null)[]) => ({ lawdCd: '1', dong: 'x', complexes: [{ name: 'a', buildYear: null, trades: dates.map((date) => ({ date, area: 84, floor: 1, amount: 1, cancelled: false })) }] });
+  it('한 달뿐이면 그 달', () => expect(tradePeriod(b(['2026-10-01', '2026-10-30']))).toBe('2026년 10월'));
+  it('여러 달이면 첫 달–끝 달 (같은 해는 끝 달 연도 생략)', () => {
+    expect(tradePeriod(b(['2026-10-01', '2026-08-03', '2026-09-30']))).toBe('2026.08–10');
+    expect(tradePeriod(b(['2025-12-01', '2026-02-03']))).toBe('2025.12–2026.02');
+  });
+  it('날짜가 하나도 없으면 null', () => expect(tradePeriod(b([null]))).toBeNull());
+});
+
+describe('tradeView 한 단지 한 표', () => {
+  it('단지마다 면적 칸이 있는 줄 목록 — 면적 작은 것부터, 같은 면적은 최근 거래 먼저', () => {
+    const v = tradeView({
+      lawdCd: '11740', dong: '성내동',
+      complexes: [{ name: '성내 A', buildYear: 2004, trades: [
+        { date: '2026-10-01', area: 84.97, floor: 10, amount: 120000, cancelled: false },
+        { date: '2026-10-05', area: 59.9, floor: 3, amount: 90000, cancelled: true },
+        { date: '2026-10-09', area: 84.97, floor: 12, amount: 125000, cancelled: false },
+      ] }],
+    });
+    expect(v.complexes[0].rows.map((r) => [r.area, r.date])).toEqual([
+      ['59.9㎡(18평)', '2026.10.05(월)'], ['84.97㎡(26평)', '2026.10.09(금)'], ['84.97㎡(26평)', '2026.10.01(목)'],
+    ]);
+    expect(v.complexes[0].rows[0]).toMatchObject({ cancelled: true, amount: '9억원' });
+    expect(v.period).toBe('2026년 10월');
   });
 });

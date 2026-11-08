@@ -18,26 +18,34 @@ const truncated = truncatedNotice(b);
 if (v) setPublicCache(Astro.response.headers);
 else Astro.response.status = 404;
 ---
-<Base title={v ? v.title : '실거래를 찾을 수 없습니다'} description={v ? `${dong} 아파트 단지별·면적대별 최근 12개월 실거래` : ''} sources={['trade']} noindex={!v}>
-  {!v ? <NotFound message="최근 12개월 거래가 있는 법정동만 볼 수 있습니다." /> : (
+<Base title={v ? v.title : '실거래를 찾을 수 없습니다'} description={v ? `${dong} 아파트 단지별·면적별 실거래${v.period ? ` (${v.period} 계약)` : ''}` : ''} sources={['trade']} noindex={!v}>
+  {!v ? <NotFound message="최근 12개월 안에 거래가 있는 법정동만 볼 수 있습니다." /> : (
     <section>
       <h1>{v.title}</h1>
-      <p class="page-notice">최근 12개월 계약 기준. 해제된 거래는 표시만 하고 시세 계산에서 뺍니다.</p>
+      {/* 묶음은 최근 12개월 창이지만 과거 자료를 채우는 중이라, 실제로 든 계약 달만 적는다 */}
+      <p class="page-notice">{v.period ? `${v.period} 계약분.` : ''} 해제된 거래도 '해제'로 표시합니다. 단지 상세의 주변 시세 비교에는 해제 거래를 넣지 않습니다.</p>
       {truncated && <p class="hint">{truncated}</p>}
       {v.complexes.length === 0 ? <p class="empty">거래가 없습니다.</p> : v.complexes.map((c) => (
         <section>
-          <h2>{c.name} <small>{c.buildYear}</small></h2>
-          {c.areas.map((a) => (
-            <>
-              <h3 class="tabular">{a.area}</h3>
-              <div class="table-wrap"><table class="data-table">
-                <thead><tr><th>계약일</th><th class="num">층</th><th class="num">거래 금액</th></tr></thead>
-                <tbody>{a.rows.map((r) => <tr><td class="num">{r.date}{r.cancelled && ' (해제)'}</td><td class="num">{r.floor}</td><td class="num">{r.amount}</td></tr>)}</tbody>
-              </table></div>
-            </>
-          ))}
+          <h2>{c.name} <small class="build-year">{c.buildYear}</small></h2>
+          <div class="table-wrap"><table class="data-table data-table--stack">
+            <thead><tr><th>전용면적</th><th>계약일</th><th class="num">층</th><th class="num">거래 금액</th></tr></thead>
+            <tbody>{c.rows.map((r) => (
+              <tr>
+                <td class="num cell-title" data-label="전용면적">{r.area}</td>
+                <td class="num" data-label="계약일">{r.date}{r.cancelled && <span class="badge trade-cancel">해제</span>}</td>
+                <td class="num" data-label="층">{r.floor}</td>
+                <td class="num cell-key" data-label="거래 금액">{r.amount}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
         </section>
       ))}
     </section>
   )}
 </Base>
+
+<style>
+  .build-year { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .trade-cancel { margin: 0 0 0 6px; }
+</style>
