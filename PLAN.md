@@ -30,14 +30,14 @@
 - [x] Plan B 특공 판정 (최종 리뷰 수정 4건 b1970bd, 189/189)
 - [x] Plan C 동기화 (plan-c-sync, 최종 리뷰 수정 6건 362a28d, 287/287)
 - [x] Plan D 화면·배포 문서·ops (plan-d-screens, Task 1~9, 52 files·396 passed — opus 최종 리뷰 전)
-- [ ] plan-a-foundation·plan-b-special-supply·plan-c-sync 브랜치 main 병합 (사용자 확인 필요)
+- [x] plan-a~d 브랜치 main 병합 (2026-11-08, fast-forward 8c780f7)
 
 ## 4. 진행률
-완료 14 / 전체 15 (마지막 갱신 2026-11-08, Plan D 완료·최종 리뷰 반영 — 병합·배포 남음)
+완료 15 / 전체 15 (마지막 갱신 2026-11-08, 남은 것은 배포 — 사용자)
 
 ## 5. 다음에 할 작업
 1. ~~Plan D opus 최종 리뷰·수정 한 번~~ 완료(2026-11-08, 1558fd1, 시험 409/409). 미룬 작은 것은 §6 'Plan D 최종 리뷰 미룬 것'
-2. **사용자 확인 필요** 브랜치 병합: plan-a-foundation·plan-b-special-supply·plan-c-sync·plan-d-screens → main
+2. ~~브랜치 병합~~ 완료(2026-11-08, main fast-forward)
 3. **사용자 확인 필요** 배포(`docs/deploy.md`):
    1. 1~3단계: Cloudflare 가입, D1·KV 만들기, `SITE_URL`(지금 localhost) 바꾸기, 0001 적용 여부 확인 뒤 원격 스키마, 첫 배포
    2. 4단계: GitHub 저장소(origin — 지금 remote 없음)·Secrets, `SYNC_ENABLED=true`, 첫 동기화 수동 실행
