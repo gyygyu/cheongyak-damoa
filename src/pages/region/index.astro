@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import { SIDO_LIST, regionHref } from '../../lib/view/region';
+import { setPublicCache } from '../../server/cache';
+setPublicCache(Astro.response.headers);
+---
+<Base title="지역별 청약·실거래" description="시도별 청약 공고와 동별 아파트 실거래, 청약통장 가입 현황" sources={['applyhome', 'trade', 'account']}>
+  <h1>지역별 청약·실거래</h1>
+  <ul class="tiles">{SIDO_LIST.map((s) => <li><a class="tile" href={regionHref(s)}>{s}</a></li>)}</ul>
+</Base>

@@ -1,0 +1,40 @@
+---
+import Base from '../../../layouts/Base.astro';
+import NotFound from '../../../components/NotFound.astro';
+import { KV_KEYS } from '../../../lib/kv-keys';
+import { getJson } from '../../../server/kv';
+import { setPublicCache } from '../../../server/cache';
+import { safeParam } from '../../../lib/view/format';
+import { tradeView } from '../../../lib/view/region';
+import type { TradeBundle } from '../../../lib/view/bundle-types';
+
+// 주소의 시군구 자리는 시군구코드 5자리(이름이 겹치는 '중구' 등 때문)
+const lawd = safeParam(Astro.params.lawd);
+const dong = safeParam(Astro.params.dong);
+const b = lawd && dong && /^\d{5}$/.test(lawd) ? await getJson<TradeBundle>(KV_KEYS.trade(lawd, dong)) : null;
+const v = b ? tradeView(b) : null;
+if (v) setPublicCache(Astro.response.headers);
+else Astro.response.status = 404;
+---
+<Base title={v ? v.title : '실거래를 찾을 수 없습니다'} description={v ? `${dong} 아파트 단지별·면적대별 최근 12개월 실거래` : ''} sources={['trade']} noindex={!v}>
+  {!v ? <NotFound message="최근 12개월 거래가 있는 법정동만 볼 수 있습니다." /> : (
+    <section>
+      <h1>{v.title}</h1>
+      <p class="page-notice">최근 12개월 계약 기준. 해제된 거래는 표시만 하고 시세 계산에서 뺍니다.</p>
+      {v.complexes.length === 0 ? <p class="empty">거래가 없습니다.</p> : v.complexes.map((c) => (
+        <section>
+          <h2>{c.name} <small>{c.buildYear}</small></h2>
+          {c.areas.map((a) => (
+            <>
+              <h3 class="tabular">{a.area}</h3>
+              <div class="table-wrap"><table class="data-table">
+                <thead><tr><th>계약일</th><th class="num">층</th><th class="num">거래 금액</th></tr></thead>
+                <tbody>{a.rows.map((r) => <tr><td class="num">{r.date}{r.cancelled && ' (해제)'}</td><td class="num">{r.floor}</td><td class="num">{r.amount}</td></tr>)}</tbody>
+              </table></div>
+            </>
+          ))}
+        </section>
+      ))}
+    </section>
+  )}
+</Base>

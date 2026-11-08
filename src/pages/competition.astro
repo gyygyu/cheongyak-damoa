@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import { KV_KEYS } from '../lib/kv-keys';
+import { getJson } from '../server/kv';
+import { setPublicCache } from '../server/cache';
+import { competitionRows } from '../lib/view/region';
+import type { CompetitionBundle } from '../lib/view/bundle-types';
+
+const rows = competitionRows(await getJson<CompetitionBundle>(KV_KEYS.competition));
+setPublicCache(Astro.response.headers);
+---
+<Base title="청약 경쟁률 모음" description="최근 아파트 청약 단지별 최고 경쟁률과 접수 건수" sources={['competition', 'applyhome']}>
+  <h1>청약 경쟁률 모음</h1>
+  {rows.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
+    <div class="table-wrap"><table class="data-table">
+      <thead><tr><th>단지</th><th>지역</th><th>모집공고</th><th class="num">최고 경쟁률</th><th class="num">접수</th><th class="num">공급</th></tr></thead>
+      <tbody>{rows.map((r) => <tr><td><a href={r.href}>{r.name}</a></td><td>{r.place}</td><td class="num">{r.noticeDate}</td><td class="num">{r.rate}</td><td class="num">{r.applicants}</td><td class="num">{r.supply}</td></tr>)}</tbody>
+    </table></div>
+  )}
+</Base>
