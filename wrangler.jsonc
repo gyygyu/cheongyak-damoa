@@ -11,5 +11,5 @@
   "kv_namespaces": [
     { "binding": "KV", "id": "298557e5e0a54ce4949ef6545a198a8b" }
   ],
-  "vars": { "SITE_URL": "http://localhost:4321" }
+  "vars": { "SITE_URL": "https://cheongyak-damoa.heegyu010.workers.dev" }
 }

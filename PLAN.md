@@ -39,7 +39,7 @@
 1. ~~Plan D opus 최종 리뷰·수정 한 번~~ 완료(2026-11-08, 1558fd1, 시험 409/409). 미룬 작은 것은 §6 'Plan D 최종 리뷰 미룬 것'
 2. ~~브랜치 병합~~ 완료(2026-11-08, main fast-forward)
 3. **사용자 확인 필요** 배포(`docs/deploy.md`):
-   1. 1~3단계: Cloudflare 가입, D1·KV 만들기, `SITE_URL`(지금 localhost) 바꾸기, 0001 적용 여부 확인 뒤 원격 스키마, 첫 배포
+   1. ~~1~3단계~~ 완료(2026-11-08): 새 계정(heegyu010@naver.com) 토큰·D1·KV, 원격 0001 적용(새 D1), 배포 https://cheongyak-damoa.heegyu010.workers.dev (`SITE_URL` 도 이 주소, `.env` 에도)
    2. 4단계: GitHub 저장소(origin — 지금 remote 없음)·Secrets, `SYNC_ENABLED=true`, 첫 동기화 수동 실행
    3. 첫 실데이터 동기화 뒤 화면 점검(9단계): `/competition`·`/region/{시도}` 청약통장 표, `BLNC_SECD` 02·03 라벨(`src/lib/view/region.ts` AREA_KIND_LABEL — '102㎡ 이하'·'135㎡ 이하'는 추정), 실거래 `LAWD_CD` 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
    4. 도메인 연결 뒤 서치콘솔·네이버 사이트맵 제출, `npm run ops:daily` 예약
