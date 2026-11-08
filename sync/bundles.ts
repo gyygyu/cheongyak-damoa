@@ -1,7 +1,7 @@
 // D1 행 → 화면용 KV 묶음 (spec §6), 바뀐 묶음만 고르는 쓰기 예산 (spec §10). 순수 함수
 import type { DbRow } from '../src/lib/raw';
 import { aptPhase, type AptSchedule } from '../src/lib/apt/status';
-import { aptEvents, groupByMonth, type CalendarEvent } from '../src/lib/apt/schedule';
+import { aptEvents, groupByMonth, placeFields, type CalendarEvent } from '../src/lib/apt/schedule';
 import { nearbyPrice, type TradeRecord } from '../src/lib/trade/nearby';
 import { SIDO_ALIAS } from '../src/lib/region/lawd';
 import { addMonths } from '../src/lib/date';
@@ -116,7 +116,7 @@ function lhEvent(r: DbRow): CalendarEvent[] {
   const start = s(r.receipt_start);
   if (!start) return [];
   const end = s(r.receipt_end);
-  return [{ date: start, ...(end && end !== start ? { endDate: end } : {}), kind: 'lh-receipt', ref: `lh:${s(r.lh_id)}`, title: s(r.title) ?? '' }];
+  return [{ date: start, ...(end && end !== start ? { endDate: end } : {}), kind: 'lh-receipt', ref: `lh:${s(r.lh_id)}`, title: s(r.title) ?? '', ...placeFields({ sido: s(r.sido), sigungu: s(r.sigungu) }) }];
 }
 
 function sidoOfRegion(region: string): string {
@@ -183,7 +183,7 @@ export function buildBundles(ds: Dataset, ctx: BundleCtx, skipped: string[] = []
 
   // calendar:YYYY-MM
   const events: CalendarEvent[] = [
-    ...ds.notices.flatMap((nt) => aptEvents(`apt:${s(nt.pblanc_no)}`, s(nt.name) ?? '', scheduleOf(nt))),
+    ...ds.notices.flatMap((nt) => aptEvents(`apt:${s(nt.pblanc_no)}`, s(nt.name) ?? '', scheduleOf(nt), { sido: s(nt.sido), sigungu: s(nt.sigungu) })),
     ...unmatchedLh.flatMap(lhEvent),
   ];
   for (const [month, list] of Object.entries(groupByMonth(events))) put(`calendar:${month}`, { month, events: list }, 'events');

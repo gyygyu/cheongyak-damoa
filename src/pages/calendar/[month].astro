@@ -7,7 +7,7 @@ import { KV_KEYS } from '../../lib/kv-keys';
 import { getJson } from '../../server/kv';
 import { setPublicCache } from '../../server/cache';
 import { todayKst } from '../../lib/date';
-import { parseMonth, prevMonth, nextMonth, monthGrid, monthRows, dayCounts, dayList, dayId, mergeEvents, dedupeEvents, type DayCount, type CalDay } from '../../lib/view/calendar';
+import { parseMonth, prevMonth, nextMonth, monthGrid, monthRows, dayCounts, dayList, dayId, mergeEvents, dedupeEvents, weekGroups, placeLabel, shortDay, type DayCount, type CalDay, type CalWeek } from '../../lib/view/calendar';
 import { truncatedNotice } from '../../lib/view/truncated';
 import type { CalendarBundle } from '../../lib/view/bundle-types';
 
@@ -17,6 +17,8 @@ const ym = parseMonth(Astro.params.month, today);
 let grid: (string | null)[][] = [];
 let counts: Record<string, DayCount[]> = {};
 let list: { past: CalDay[]; pastCount: number; days: CalDay[] } = { past: [], pastCount: 0, days: [] };
+let weeks: CalWeek[] = [];
+let sidos: { value: string; label: string }[] = [];
 let truncated: string | null = null;
 if (ym) {
   // 지난달에 시작해 이번 달까지 이어지는 일정 때문에 두 묶음을 읽는다 (각 50KB 이하)
@@ -26,6 +28,10 @@ if (ym) {
   grid = monthGrid(ym);
   counts = dayCounts(rows);
   list = dayList(rows, ym, today);
+  weeks = weekGroups(list.days, ym);
+  sidos = [...new Set(Object.values(rows).flat().map((r) => r.sido).filter((x): x is string => !!x))]
+    .map((value) => ({ value, label: placeLabel(value, null) ?? value }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
   setPublicCache(Astro.response.headers);
 } else {
   Astro.response.status = 404;
@@ -39,7 +45,8 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
       <div class="page-head">
         <div>
           <h1>{title}</h1>
-          <p class="page-purpose">날짜 칸의 건수를 누르면 아래 목록의 그날로 갑니다.</p>
+          <p class="page-purpose only-wide">날짜 칸의 건수를 누르면 아래 목록의 그날로 갑니다.</p>
+          <p class="page-purpose only-narrow">주를 누르면 그 주 일정이 펼쳐집니다.</p>
         </div>
         <nav class="month-nav" aria-label="달 이동">
           <a class="btn btn--ghost" href={`/calendar/${prevMonth(ym)}`} rel="prev"><Icon name="arrow-left" size={16} />지난달</a>
@@ -53,7 +60,17 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
         <button type="button" data-filter="apt" aria-pressed="false">아파트</button>
         <button type="button" data-filter="lh" aria-pressed="false">LH</button>
         <button type="button" data-filter="ipo" aria-pressed="false">공모주</button>
+        {sidos.length > 1 && (
+          <label class="cal-sido">
+            <span class="sr-only">지역</span>
+            <select data-sido-filter>
+              <option value="">모든 지역</option>
+              {sidos.map((s) => <option value={s.value}>{s.label}</option>)}
+            </select>
+          </label>
+        )}
       </div>
+      <p class="hint only-wide" data-sido-hint hidden>달력 칸의 건수는 지역과 관계없이 전체 건수입니다. 아래 목록만 고른 지역으로 거릅니다.</p>
       <table class="cal">
         <thead><tr>{WEEK.map((d) => <th scope="col">{d}</th>)}</tr></thead>
         <tbody>
@@ -67,7 +84,7 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
                 {(counts[d] ?? []).length > 0 && (
                   <ul class="cal-counts">
                     {counts[d].map((c) => (
-                      <li data-group={c.group}><a href={`#${dayId(d)}`}><span>{c.label}</span><span class="num">{c.count}<span class="sr-only">건</span></span></a></li>
+                      <li data-group={c.group}><a href={`#${dayId(d)}`}><span><span class="sr-only">{shortDay(d)} </span>{c.label}</span><span class="num">{c.count}<span class="sr-only">건</span></span></a></li>
                     ))}
                   </ul>
                 )}
@@ -80,13 +97,18 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
       <h2 class="cal-list-head">날짜별 일정</h2>
       {list.pastCount > 0 && (
         <details class="cal-past">
-          <summary>지난 일정 {list.pastCount}건<Icon name="chevron-down" size={18} /></summary>
+          <summary><span>지난 일정 <span data-count>{list.pastCount}</span>건</span><Icon name="chevron-down" size={18} /></summary>
           <DayList days={list.past} />
         </details>
       )}
-      {list.days.length > 0
-        ? <DayList days={list.days} />
-        : <p class="empty">{list.pastCount > 0 ? '이 달에 남은 일정이 없습니다.' : '이 달에는 일정이 없습니다.'}</p>}
+      {weeks.map((w) => (
+        <details class="cal-week" id={w.id} open={w.open}>
+          <summary><span class="tabular">{w.label}</span><span class="cal-week-count"><span><span data-count>{w.count}</span>건</span><Icon name="chevron-down" size={18} /></span></summary>
+          <DayList days={w.days} />
+        </details>
+      ))}
+      {weeks.length === 0 && <p class="empty">{list.pastCount > 0 ? '이 달에 남은 일정이 없습니다.' : '이 달에는 일정이 없습니다.'}</p>}
+      <p class="empty" data-filter-empty hidden>고른 조건에 맞는 일정이 없습니다.</p>
     </section>
   )}
   <script>import '../../scripts/calendar-client';</script>

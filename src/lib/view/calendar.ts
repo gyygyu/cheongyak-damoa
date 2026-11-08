@@ -13,10 +13,27 @@ export function hrefOf(ref: string): string | null {
   return `/${m[1]}/${encodeURIComponent(m[2])}`;
 }
 
-export interface EventRow { date: string; endDate: string | null; dateText: string; kind: EventKind; kindLabel: string; title: string; href: string | null; group: EventGroup }
+// 시도 짧은 이름 (일정 줄 지역 글자). 표에 없는 이름은 그대로 보인다
+const SIDO_SHORT: Record<string, string> = {
+  서울특별시: '서울', 부산광역시: '부산', 대구광역시: '대구', 인천광역시: '인천', 전남광주통합특별시: '전남광주', 광주광역시: '광주',
+  대전광역시: '대전', 울산광역시: '울산', 세종특별자치시: '세종', 경기도: '경기', 강원특별자치도: '강원', 충청북도: '충북',
+  충청남도: '충남', 전북특별자치도: '전북', 전라남도: '전남', 경상북도: '경북', 경상남도: '경남', 제주특별자치도: '제주',
+};
+export function placeLabel(sido: string | null | undefined, sigungu: string | null | undefined): string | null {
+  if (!sido) return null;
+  return [SIDO_SHORT[sido] ?? sido, sigungu].filter(Boolean).join(' ');
+}
+
+export interface EventRow {
+  date: string; endDate: string | null; dateText: string; kind: EventKind; kindLabel: string; title: string; href: string | null; group: EventGroup;
+  place: string | null; sido: string | null;
+}
 export function eventRow(e: CalendarEvent): EventRow {
   const endDate = e.endDate && e.endDate > e.date ? e.endDate : null;
-  return { date: e.date, endDate, dateText: formatRange(e.date, endDate), kind: e.kind, kindLabel: KIND_LABEL[e.kind] ?? e.kind, title: e.title, href: hrefOf(e.ref), group: kindGroup(e.kind) };
+  return {
+    date: e.date, endDate, dateText: formatRange(e.date, endDate), kind: e.kind, kindLabel: KIND_LABEL[e.kind] ?? e.kind, title: e.title, href: hrefOf(e.ref), group: kindGroup(e.kind),
+    place: placeLabel(e.sido, e.sigungu), sido: e.sido ?? null,
+  };
 }
 
 const YM = /^(\d{4})-(0[1-9]|1[0-2])$/;
@@ -172,4 +189,22 @@ export function dayList(rowsByDay: Record<string, ListRow[]>, ym: string, today:
   const fold = today.slice(0, 7) === ym;
   const past = fold ? all.filter((d) => d.date < today) : [];
   return { past, pastCount: past.reduce((n, d) => n + d.rows.length, 0), days: fold ? all.filter((d) => d.date >= today) : all };
+}
+
+// ── 날짜 목록을 달력 줄(일~토) 단위로 묶는다. 휴대폰은 달력 칸이 없어 목록이 길어지므로 첫 주만 펼치고 나머지는 접는다 ──
+export interface CalWeek { id: string; label: string; count: number; open: boolean; days: CalDay[] }
+
+export function weekGroups(days: CalDay[], ym: string): CalWeek[] {
+  const weeks: CalWeek[] = [];
+  for (const row of monthGrid(ym)) {
+    const inMonth = row.filter((d): d is string => d !== null);
+    const ds = days.filter((d) => inMonth.includes(d.date));
+    if (!ds.length) continue;
+    const first = inMonth[0];
+    weeks.push({
+      id: `w-${first}`, label: `${shortDay(first)} ~ ${shortDay(inMonth[inMonth.length - 1])}`,
+      count: ds.reduce((n, d) => n + d.rows.length, 0), open: weeks.length === 0, days: ds,
+    });
+  }
+  return weeks;
 }

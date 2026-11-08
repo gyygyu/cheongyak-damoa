@@ -59,6 +59,9 @@ describe('buildBundles', () => {
     const cal = get(ws, 'calendar:2026-11');
     expect(cal.events.some((e: { kind: string; ref: string }) => e.kind === 'lh-receipt' && e.ref === 'lh:L2')).toBe(true);
     expect(cal.events.some((e: { kind: string; ref: string }) => e.kind === 'rank1' && e.ref === 'apt:P1')).toBe(true);
+    // 일정 줄에 지역을 보이려고 시도·시군구를 함께 담는다
+    expect(cal.events.find((e: { ref: string }) => e.ref === 'lh:L2')).toMatchObject({ sido: '경기도', sigungu: '화성시' });
+    expect(cal.events.find((e: { ref: string }) => e.ref === 'apt:P1')).toHaveProperty('sido');
   });
 
   it('home 은 오늘부터 7일 안 일정과 경쟁률 상위를 담는다', () => {

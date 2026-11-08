@@ -14,6 +14,12 @@ describe('aptEvents', () => {
     expect(ev[3]).toEqual({ date: '2026-12-20', endDate: '2026-12-22', kind: 'contract', ref: 'P1', title: '광교자이' });
     expect(ev[0].endDate).toBeUndefined(); // 하루짜리는 endDate 없음
   });
+  it('지역(시도·시군구)이 있으면 일정마다 붙인다', () => {
+    const ev = aptEvents('P1', '광교자이', s, { sido: '경기도', sigungu: '수원시 영통구' });
+    expect(ev.every((e) => e.sido === '경기도' && e.sigungu === '수원시 영통구')).toBe(true);
+    expect(aptEvents('P1', '광교자이', s, { sido: '세종특별자치시', sigungu: null })[0]).toMatchObject({ sido: '세종특별자치시' });
+    expect('sigungu' in aptEvents('P1', '광교자이', s, { sido: '세종특별자치시', sigungu: null })[0]).toBe(false);
+  });
 });
 
 describe('groupByMonth', () => {

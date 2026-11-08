@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseMonth, monthGrid, monthRows, dayCounts, dayList, dday, complexKey, dedupeEvents, mergeEvents, hrefOf, kindGroup, prevMonth, nextMonth, eventRow } from '../src/lib/view/calendar';
+import { parseMonth, monthGrid, monthRows, dayCounts, dayList, dday, complexKey, dedupeEvents, mergeEvents, hrefOf, kindGroup, prevMonth, nextMonth, eventRow, placeLabel, weekGroups } from '../src/lib/view/calendar';
 import type { CalendarEvent } from '../src/lib/apt/schedule';
 
 const ev = (date: string, endDate?: string, kind: CalendarEvent['kind'] = 'rank1', ref = 'apt:P1'): CalendarEvent =>
@@ -101,6 +101,43 @@ describe('dayList — 아래 목록 (휴대폰은 오늘부터)', () => {
   });
 });
 
+describe('weekGroups — 날짜 목록을 달력 줄(주) 단위로 묶어 첫 주만 펼친다', () => {
+  const evs = [ev('2026-11-02'), ev('2026-11-05', undefined, 'winner'), ev('2026-11-08', undefined, 'rank2'), ev('2026-11-10', undefined, 'winner'), ev('2026-11-30', undefined, 'winner')];
+  it('주마다 기간 글자·건수, 첫 주만 open', () => {
+    const v = dayList(monthRows(evs, '2026-11', '2026-12-20'), '2026-11', '2026-12-20');
+    const w = weekGroups(v.days, '2026-11');
+    expect(w.map((g) => [g.label, g.count, g.open, g.days.map((d) => d.date.slice(8))])).toEqual([
+      ['11.01(일) ~ 11.07(토)', 2, true, ['02', '05']],
+      ['11.08(일) ~ 11.14(토)', 2, false, ['08', '10']],
+      ['11.29(일) ~ 11.30(월)', 1, false, ['30']],
+    ]);
+    expect(w[1].id).toBe('w-2026-11-08');
+  });
+  it('이번 달이면 오늘이 든 주부터 (지난 날은 dayList 가 이미 뺐다)', () => {
+    const v = dayList(monthRows(evs, '2026-11', '2026-11-09'), '2026-11', '2026-11-09');
+    const w = weekGroups(v.days, '2026-11');
+    expect(w.map((g) => [g.label, g.count, g.open])).toEqual([['11.08(일) ~ 11.14(토)', 1, true], ['11.29(일) ~ 11.30(월)', 1, false]]);
+  });
+  it('일정이 없으면 빈 배열', () => {
+    expect(weekGroups([], '2026-11')).toEqual([]);
+  });
+});
+
+describe('placeLabel — 일정 줄의 짧은 지역 글자', () => {
+  it('시도는 짧은 이름, 시군구는 그대로', () => {
+    expect(placeLabel('서울특별시', '강남구')).toBe('서울 강남구');
+    expect(placeLabel('경기도', '수원시 영통구')).toBe('경기 수원시 영통구');
+    expect(placeLabel('전남광주통합특별시', '여수시')).toBe('전남광주 여수시');
+    expect(placeLabel('세종특별자치시', null)).toBe('세종');
+    expect(placeLabel('강원특별자치도', '춘천시')).toBe('강원 춘천시');
+  });
+  it('시도가 없으면 null, 모르는 시도 이름은 그대로', () => {
+    expect(placeLabel(null, '강남구')).toBeNull();
+    expect(placeLabel(undefined, undefined)).toBeNull();
+    expect(placeLabel('어딘가', null)).toBe('어딘가');
+  });
+});
+
 describe('dday', () => {
   it('오늘 = today, D-3 이내 = soon, 그 뒤 = later, 지난 날 = past (7일 넘으면 글자 없음)', () => {
     expect(dday('2026-11-08', '2026-11-08')).toEqual({ label: '오늘', tone: 'today' });
@@ -165,6 +202,7 @@ describe('링크·그룹', () => {
     expect(kindGroup('ipo-listing')).toBe('ipo');
   });
   it('eventRow', () => {
-    expect(eventRow(ev('2026-11-16', '2026-11-26'))).toMatchObject({ dateText: '2026.11.16(월) ~ 11.26(목)', kindLabel: '1순위', href: '/apt/P1', group: 'apt' });
+    expect(eventRow(ev('2026-11-16', '2026-11-26'))).toMatchObject({ dateText: '2026.11.16(월) ~ 11.26(목)', kindLabel: '1순위', href: '/apt/P1', group: 'apt', place: null, sido: null });
+    expect(eventRow({ ...ev('2026-11-16'), sido: '경기도', sigungu: '시흥시' })).toMatchObject({ place: '경기 시흥시', sido: '경기도' });
   });
 });

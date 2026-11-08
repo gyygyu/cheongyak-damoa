@@ -144,7 +144,7 @@ p { margin: 0 0 12px; }
 .info dd { margin: 0; font-variant-numeric: tabular-nums; }
 
 /* 일정 목록 줄 (EventList·DayList·정정 이력·시군구 공고) */
-.rows { list-style: none; margin: 0 0 8px; padding: 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
+.rows { list-style: none; margin: 0 0 8px; padding: 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .rows li { padding: 12px 14px; font-size: 14px; }
 .rows li + li { border-top: 1px solid var(--line); }
 .rows a { color: var(--ink); text-decoration: none; }
@@ -152,11 +152,18 @@ p { margin: 0 0 12px; }
 .rows strong { font-weight: 600; }
 .rows .tabular { color: var(--muted); font-size: 13px; }
 /* 일정 줄: 배지 칸(고정 폭) | 제목·기간. 배지가 위·아래 줄에 붙어 보이지 않게 같은 줄 첫 칸에 둔다 */
-.rows .ev { display: grid; grid-template-columns: 6.75rem minmax(0, 1fr); gap: 0 12px; align-items: baseline; }
+.rows .ev { position: relative; display: grid; grid-template-columns: 6.75rem minmax(0, 1fr); gap: 0 12px; align-items: baseline; transition: background-color 0.15s; }
+.rows .ev[hidden], .day[hidden], .cal-week[hidden], .cal-past[hidden] { display: none; }
+/* 줄 어디를 눌러도 제목 링크로 간다 (제목만 누르면 휴대폰에서 22px 높이뿐) */
+.rows .ev a.ev-title::after { content: ''; position: absolute; inset: 0; }
+.rows .ev:has(a.ev-title):hover { background: var(--surface); }
+.rows .ev a.ev-title:focus-visible { outline: none; }
+.rows .ev:has(a.ev-title:focus-visible) { outline: 2px solid var(--brand); outline-offset: -2px; }
 .rows .ev .badge { justify-self: start; margin: 0; vertical-align: baseline; }
 .ev-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ev-title { font-weight: 600; color: var(--ink); }
 .ev-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--muted); }
+.ev-place { color: var(--ink-2); }
 
 /* D-day (DESIGN.md: 오늘 = 강조색, D-3 이내 = amber, 지난 것 = muted). 항상 글자와 함께 */
 .dday { display: inline-flex; align-items: center; min-height: 20px; padding: 0 6px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -263,13 +270,24 @@ p { margin: 0 0 12px; }
 }
 .cal-filter button:hover { border-color: var(--brand); color: var(--ink); }
 .cal-filter button[aria-pressed='true'] { background: var(--brand); border-color: var(--brand); color: #fff; }
-[data-show='apt'] [data-group]:not([data-group='apt']),
-[data-show='lh'] [data-group]:not([data-group='lh']),
-[data-show='ipo'] [data-group]:not([data-group='ipo']) { display: none; }
-/* 거른 뒤 줄이 하나도 안 남은 날은 머리까지 숨긴다 */
-[data-show='apt'] .day:not(:has([data-group='apt'])),
-[data-show='lh'] .day:not(:has([data-group='lh'])),
-[data-show='ipo'] .day:not(:has([data-group='ipo'])) { display: none; }
+/* 달력 칸 건수만 CSS 로 거른다. 아래 목록은 종류·지역을 함께 보는 scripts/calendar-client.ts 가 거른다 */
+[data-show='apt'] .cal [data-group]:not([data-group='apt']),
+[data-show='lh'] .cal [data-group]:not([data-group='lh']),
+[data-show='ipo'] .cal [data-group]:not([data-group='ipo']) { display: none; }
+.cal-sido select { width: auto; min-width: 9rem; max-width: 100%; font-size: 14px; }
+/* 날짜 목록의 주 묶음 (휴대폰은 달력 칸이 없어 첫 주만 펼친다) */
+.cal-week { margin: 0 0 12px; scroll-margin-top: calc(var(--header-h) + 8px); }
+.cal-week summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 14px;
+  list-style: none; cursor: pointer; border-bottom: 1px solid var(--line-strong); color: var(--ink); font-size: 15px; font-weight: 700;
+}
+.cal-week summary::-webkit-details-marker { display: none; }
+.cal-week summary:hover { color: var(--brand-text); }
+.cal-week-count { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-size: 14px; font-weight: 600; }
+.cal-week summary .icon { transition: transform 0.15s; }
+.cal-week[open] summary { margin-bottom: 12px; }
+.cal-week[open] summary .icon { transform: rotate(180deg); }
+.only-narrow { display: none; }
 
 /* 입력 칸 (맞춤 판정) */
 fieldset { border: 0; padding: 0; margin: 0 0 20px; }
@@ -300,6 +318,8 @@ select, input[type='search'], input[type='text'] {
   .entry-links li + li { border-left: 0; border-top: 1px solid var(--line); }
   .rows .ev { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 0 10px; }
   .cal { display: none; }
+  .only-wide { display: none; }
+  .only-narrow { display: block; }
   .tabbar {
     display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     background: var(--bg); border-top: 1px solid var(--line);

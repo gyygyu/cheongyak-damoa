@@ -11,7 +11,10 @@ const { rows, empty } = Astro.props;
         <span class="badge">{r.kindLabel}</span>
         <span class="ev-main">
           {r.href ? <a class="ev-title" href={r.href}>{r.title}</a> : <span class="ev-title">{r.title}</span>}
-          <span class="ev-meta tabular">{r.dateText}</span>
+          <span class="ev-meta">
+            {r.place && <span class="ev-place">{r.place}</span>}
+            <span class="tabular">{r.dateText}</span>
+          </span>
         </span>
       </li>
     ))}

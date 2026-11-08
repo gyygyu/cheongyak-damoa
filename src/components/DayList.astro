@@ -13,12 +13,13 @@ const { days } = Astro.props;
       </h3>
       <ul class="rows">
         {d.rows.map((r) => (
-          <li class="ev" data-group={r.group}>
+          <li class="ev" data-group={r.group} data-sido={r.sido ?? ''}>
             <span class="badge">{r.kindLabel}</span>
             <span class="ev-main">
               {r.href ? <a class="ev-title" href={r.href}>{r.title}</a> : <span class="ev-title">{r.title}</span>}
-              {(r.meta || r.note) && (
+              {(r.place || r.meta || r.note) && (
                 <span class="ev-meta">
+                  {r.place && <span class="ev-place">{r.place}</span>}
                   {r.meta && <span class="tabular">{r.meta}</span>}
                   {r.note && <span class={`dday dday--${r.noteTone}`}>{r.note}</span>}
                 </span>
