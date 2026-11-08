@@ -1,0 +1,60 @@
+---
+import Base from '../../layouts/Base.astro';
+import NotFound from '../../components/NotFound.astro';
+import EventList from '../../components/EventList.astro';
+import { KV_KEYS } from '../../lib/kv-keys';
+import { getJson } from '../../server/kv';
+import { setPublicCache } from '../../server/cache';
+import { todayKst } from '../../lib/date';
+import { parseMonth, prevMonth, nextMonth, monthGrid, eventsByDay, mergeEvents, eventRow } from '../../lib/view/calendar';
+import type { CalendarBundle } from '../../lib/view/bundle-types';
+
+const today = todayKst();
+const ym = parseMonth(Astro.params.month, today);
+let grid: (string | null)[][] = [];
+let byDay: Record<string, ReturnType<typeof eventRow>[]> = {};
+let list: ReturnType<typeof eventRow>[] = [];
+if (ym) {
+  // 지난달에 시작해 이번 달까지 이어지는 일정 때문에 두 묶음을 읽는다 (각 50KB 이하)
+  const [cur, prev] = await Promise.all([getJson<CalendarBundle>(KV_KEYS.calendar(ym)), getJson<CalendarBundle>(KV_KEYS.calendar(prevMonth(ym)))]);
+  const events = mergeEvents(prev?.events ?? [], cur?.events ?? []);
+  grid = monthGrid(ym);
+  byDay = eventsByDay(events, ym);
+  list = events.map(eventRow).filter((r) => (r.endDate ?? r.date) >= `${ym}-01` && r.date <= `${ym}-31`);
+  setPublicCache(Astro.response.headers);
+} else {
+  Astro.response.status = 404;
+}
+const title = ym ? `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월 청약 캘린더` : '찾는 달이 없습니다';
+---
+<Base title={title} description="아파트 청약·LH·공모주 접수와 발표 일정을 달력으로 봅니다." sources={['applyhome', 'lh']} noindex={!ym}>
+  {!ym ? <NotFound message="캘린더는 이번 달 앞뒤 12개월까지 볼 수 있습니다." /> : (
+    <section class="cal-wrap" data-show="all">
+      <h1>{title}</h1>
+      <p><a href={`/calendar/${prevMonth(ym)}`} rel="prev">← 지난달</a> · <a href={`/calendar/${nextMonth(ym)}`} rel="next">다음 달 →</a></p>
+      <div class="cal-filter" role="group" aria-label="일정 거르기">
+        <button type="button" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" data-filter="apt" aria-pressed="false">아파트</button>
+        <button type="button" data-filter="lh" aria-pressed="false">LH</button>
+        <button type="button" data-filter="ipo" aria-pressed="false">공모주</button>
+      </div>
+      <table class="cal">
+        <thead><tr>{['일', '월', '화', '수', '목', '금', '토'].map((d) => <th>{d}</th>)}</tr></thead>
+        <tbody>
+          {grid.map((week) => (
+            <tr>{week.map((d) => d === null ? <td class="out"></td> : (
+              <td>
+                <div class="day">{Number(d.slice(8, 10))}</div>
+                {(byDay[d] ?? []).map((r) => (
+                  <div data-group={r.group}>{r.href ? <a href={r.href}>{r.kindLabel} {r.title}</a> : `${r.kindLabel} ${r.title}`}</div>
+                ))}
+              </td>
+            ))}</tr>
+          ))}
+        </tbody>
+      </table>
+      <div class="cal-list"><EventList rows={list} empty="이 달에는 일정이 없습니다." /></div>
+    </section>
+  )}
+  <script>import '../../scripts/calendar-client';</script>
+</Base>

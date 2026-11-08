@@ -1,8 +1,35 @@
 ---
 import Base from '../layouts/Base.astro';
+import EventList from '../components/EventList.astro';
+import AdSlot from '../components/AdSlot.astro';
 import { SITE } from '../lib/site-meta';
+import { KV_KEYS } from '../lib/kv-keys';
+import { getJson } from '../server/kv';
+import { setPublicCache } from '../server/cache';
+import { homeView } from '../lib/view/home';
+import { todayKst } from '../lib/date';
+import type { HomeBundle } from '../lib/view/bundle-types';
+
+const bundle = await getJson<HomeBundle>(KV_KEYS.home);
+const v = homeView(bundle, bundle?.today ?? todayKst());
+setPublicCache(Astro.response.headers);
 ---
-<Base title={SITE.name} description={SITE.tagline} sources={['applyhome']}>
-  <h1>{SITE.name}</h1>
-  <p>{SITE.tagline}</p>
+<Base title={SITE.name} description={SITE.tagline} sources={['applyhome', 'competition', 'lh']}>
+  <h1>오늘의 청약 일정</h1>
+  <p class="tabular">{v.today} 기준 · <a href={`/calendar/${v.today.slice(0, 7)}`}>이번 달 캘린더</a></p>
+  <h2>오늘 진행 중</h2>
+  <EventList rows={v.todayRows} empty="오늘 진행 중인 일정이 없습니다." />
+  <h2>마감 임박</h2>
+  <EventList rows={v.closingRows} empty="이틀 안에 끝나는 접수가 없습니다." />
+  <AdSlot />
+  <h2>이번 주 예정</h2>
+  <EventList rows={v.weekRows} empty="이번 주 예정된 일정이 없습니다." />
+  <h2>최근 경쟁률</h2>
+  {v.top.length === 0 ? <p class="empty">경쟁률 자료가 아직 없습니다.</p> : (
+    <div class="table-wrap"><table class="data-table">
+      <thead><tr><th>단지</th><th>지역</th><th class="num">최고 경쟁률</th></tr></thead>
+      <tbody>{v.top.map((t) => <tr><td><a href={t.href}>{t.name}</a></td><td>{t.place}</td><td class="num">{t.rate}</td></tr>)}</tbody>
+    </table></div>
+  )}
+  <p><a href="/competition">경쟁률 모음 보기</a></p>
 </Base>

@@ -1,0 +1,16 @@
+---
+import type { EventRow } from '../lib/view/calendar';
+interface Props { rows: EventRow[]; empty: string }
+const { rows, empty } = Astro.props;
+---
+{rows.length === 0 ? <p class="empty">{empty}</p> : (
+  <ul class="rows">
+    {rows.map((r) => (
+      <li data-group={r.group}>
+        <span class="badge">{r.kindLabel}</span>
+        {r.href ? <a href={r.href}><strong>{r.title}</strong></a> : <strong>{r.title}</strong>}
+        <span class="tabular"> {r.dateText}</span>
+      </li>
+    ))}
+  </ul>
+)}
