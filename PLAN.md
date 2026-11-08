@@ -14,6 +14,7 @@
 3. Plan C: 동기화 (수집기·이상치 차단·SQL·KV·백필)
 4. Plan D: 화면, docs/deploy.md, ops
 5. 11-17 이후(사용자): Cloudflare 가입, 도메인, Secrets, 서치콘솔, 애드센스
+6. UI 개선(브랜치 `ui-refresh`, 2026-11-08 critique 17/40 → 기준 `DESIGN.md`, 기록 `.impeccable/critique/`): ERP식 촘촘한 업무형 — U1~U8
 
 ## 3. 체크리스트
 - [x] 설계 문서 작성·승인
@@ -31,9 +32,17 @@
 - [x] Plan C 동기화 (plan-c-sync, 최종 리뷰 수정 6건 362a28d, 287/287)
 - [x] Plan D 화면·배포 문서·ops (plan-d-screens, Task 1~9, 52 files·396 passed — opus 최종 리뷰 전)
 - [x] plan-a~d 브랜치 main 병합 (2026-11-08, fast-forward 8c780f7)
+- [x] U1 [P0] 기반 스타일(DESIGN.md 토큰·Pretendard 로드·죽은 CSS 삭제·건너뛰기 링크) + 휴대폰 표 카드형(/competition, /apt)
+- [x] U2 [P0] 자격 판정: 자녀 수 등 기본값 '모름'(TDD), 입력칸·라벨, 단계 묶음, 결과 요약+제도별 접기, 초점 이동
+- [x] U3 [P1] 홈 '이번 주 일정' D-day 묶음·중복 단지 합치기, 캘린더 오늘·칸 개수·휴대폰 오늘부터, 단지 단계 표시
+- [x] U4 [P1] 메뉴: 공모주 탭 빼고 경쟁률, 아래 탭 56px·아이콘, 필터 버튼 44px
+- [x] U5 [P2] 숫자 표기: 미달 배지, 공급 수 이상 행 조사, 실거래 기간 문구
+- [x] U6 작은 것: 배지 붙음, 시군구 칩 글머리표, 청약홈 링크 위로, /region/서울 → 전체 이름 이동
+- [ ] U7 마무리 polish·재점검(critique) 점수 비교
+- [ ] U8 main 병합·배포 (사용자 확인 후)
 
 ## 4. 진행률
-완료 15 / 전체 15 (마지막 갱신 2026-11-08, 배포 1~4단계 끝 — 남은 것은 도메인·검색 등록·예약)
+완료 21 / 전체 23 (마지막 갱신 2026-11-08, UI 개선 U1~U6 끝(ui-refresh, 테스트 462) — U7 재점검·U8 병합 남음, 그 뒤 도메인·검색 등록·예약)
 
 ## 5. 다음에 할 작업
 1. ~~Plan D opus 최종 리뷰·수정 한 번~~ 완료(2026-11-08, 1558fd1, 시험 409/409). 미룬 작은 것은 §6 'Plan D 최종 리뷰 미룬 것'
@@ -49,6 +58,8 @@
 - 새로 clone 하면 `npm run cf-typegen` (`worker-configuration.d.ts` 는 git 제외)
 
 ## 6. 결정 사항 · 막혔던 문제
+- UI 개선(2026-11-08): 강조색은 청약다모아 파랑 #2557a7 유지(지원금다모아 녹색과 구분), 바탕은 ERP식 무채색. 임박 주황은 대비 때문에 #8a5509. 경쟁률 공급 합계가 순위·거주 줄마다 되풀이되는 SUPLY_HSHLDCO 를 다 더해 4~6배였음 → 주택형마다 한 번(sync/bundles.ts) — 실서버는 병합 뒤 첫 동기화에서 바로잡힘. 홈 중복 단지는 이름 휴리스틱(dedupeEvents)이라 이름 같은 다른 단지가 기간이 겹치면 잘못 합쳐질 수 있음
+- 미리보기: 이 세션의 preview 도구가 옛 작업 폴더(지원금다모아) launch.json 을 읽어 4321 은 지원금다모아 서버 — 청약사이트는 `npx astro dev --port 4330 --host 127.0.0.1`. 로컬 D1 은 wrangler.jsonc 의 실제 database_id 로 새 파일이 생겨 `npm run db:migrate:local` 먼저
 - Plan D 최종 리뷰 미룬 것(작은 것, 필요할 때 처리): global.css 안 쓰는 선택자 속 옛 녹색 rgba(15,110,86) / 깨진 % 주소는 Astro 가 빈 400(메뉴 없음) — Worker 진입부에서 404 화면으로 / 묶음이 없을 때도 home·competition·ipo 가 공개 캐시 1시간 / `/api/meta.json` 이 lastError(외부 응답 일부) 공개 — lastSuccess 만 / docs/deploy.md 면적 02·03 '추정' 문구 / ops-daily RUM·Workers date 필터가 UTC(한국 날짜와 9시간) / SITE_URL 이 wrangler.jsonc·site-meta.ts 두 곳 / 공모주 철회 배지 색이 정정과 같음 / LH 상세는 잘린 묶음 안내 없음 / 전전달 시작 긴 일정은 캘린더에서 빠짐 / 화면 스크립트 DOM 타입이 worker 타입과 섞임(tsconfig 분리)
 - Plan D Ruling: 묶음 지역 청약통장 통계 — 세종은 기타지역, 전남광주통합특별시는 5대광역시(옛 광주)·기타지역(옛 전남) 둘 다 밝힘, 묶음 줄은 단독 줄이 없을 때만
 - 청약홈 분양정보 API 401(11-07) — 개통 대기로 추정. survey 때 다시 확인
