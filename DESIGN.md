@@ -18,7 +18,7 @@
 | --line / --line-strong | #e9e9eb / #dcdcdf | 구분선 |
 | --brand / --brand-hover / --brand-weak / --brand-text | #2557a7 / #1b4080 / #e8eef8 / #1b4080 | 강조 하나 (링크·주 버튼·현재 위치·진행 중) |
 | --warn / --warn-weak | #c23c37 / #fbeeed | 마감·불가·미달 |
-| --amber / --amber-weak | #a76a12 / #fbf2e1 | 임박(D-3 이내)·확인 필요 |
+| --amber / --amber-weak | #8a5509 / #fbf2e1 | 임박(D-3 이내)·확인 필요 |
 | --done / --done-weak | #4f7f47 / #eef4eb | 가능·완료 |
 
 색만으로 뜻을 전하지 않는다 — 배지·결과에는 항상 글자(가능/불가/확인 필요/미달/D-2)가 함께.
