@@ -68,6 +68,18 @@ describe('픽스처로 출처별 수집', () => {
   it('통장 통계', async () => {
     expect((await collectAccount(fx, KEY, '2026-11-07')).length).toBeGreaterThan(0);
   });
+
+  it('가입기간별 통계는 3개월치가 20쪽(1만 행)을 넘어도 끝까지 받는다', async () => {
+    // 실서버 2026-11: 최근 3개월 25,941행 = 52쪽
+    const total = 500 * 30;
+    const big: Fetch = async (url) => {
+      if (!url.includes('getBnkbAcnutSbscrbStat')) return { status: 200, body: JSON.stringify({ data: [], matchCount: 0 }) };
+      const row = { DELNG_OCCRRNC_YM: '202609', DPST_ITEM_NM: '주택청약종합저축', SIDO_NM: '서울', SUBSCRPT_AREA_CODE_NM: '서울', BLNC_SECD: '01', ACNUT_CO: 1 };
+      return { status: 200, body: JSON.stringify({ data: Array.from({ length: 500 }, () => row), matchCount: total }) };
+    };
+    const rows = await collectAccount(big, KEY, '2026-11-07');
+    expect(rows.reduce((s, r) => s + Number(r.subscribers ?? 0), 0)).toBe(total);
+  });
 });
 
 describe('백필', () => {

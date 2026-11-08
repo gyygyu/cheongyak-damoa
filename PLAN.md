@@ -33,17 +33,18 @@
 - [x] plan-a~d 브랜치 main 병합 (2026-11-08, fast-forward 8c780f7)
 
 ## 4. 진행률
-완료 15 / 전체 15 (마지막 갱신 2026-11-08, 남은 것은 배포 — 사용자)
+완료 15 / 전체 15 (마지막 갱신 2026-11-08, 배포 1~4단계 끝 — 남은 것은 도메인·검색 등록·예약)
 
 ## 5. 다음에 할 작업
 1. ~~Plan D opus 최종 리뷰·수정 한 번~~ 완료(2026-11-08, 1558fd1, 시험 409/409). 미룬 작은 것은 §6 'Plan D 최종 리뷰 미룬 것'
 2. ~~브랜치 병합~~ 완료(2026-11-08, main fast-forward)
 3. **사용자 확인 필요** 배포(`docs/deploy.md`):
    1. ~~1~3단계~~ 완료(2026-11-08): 새 계정(heegyu010@naver.com) 토큰·D1·KV, 원격 0001 적용(새 D1), 배포 https://cheongyak-damoa.heegyu010.workers.dev (`SITE_URL` 도 이 주소, `.env` 에도)
-   2. 4단계: GitHub 저장소(origin — 지금 remote 없음)·Secrets, `SYNC_ENABLED=true`, 첫 동기화 수동 실행
-   3. 첫 실데이터 동기화 뒤 화면 점검(9단계): `/competition`·`/region/{시도}` 청약통장 표, `BLNC_SECD` 02·03 라벨(`src/lib/view/region.ts` AREA_KIND_LABEL — '102㎡ 이하'·'135㎡ 이하'는 추정), 실거래 `LAWD_CD` 12xxx(전남광주통합특별시)인지 옛 29xxx/46xxx 인지
+   2. ~~4단계~~ 완료(2026-11-08): 공개 저장소 gyygyu/cheongyak-damoa(지원금다모아와 같은 계정), Secrets 4개(DATA_GO_KR_KEY·CLOUDFLARE_API_TOKEN·CLOUDFLARE_ACCOUNT_ID·DART_API_KEY), 변수 `SYNC_ENABLED=true`. 로컬 git 은 `.git/config` credential.helper 가 `.env` 의 GH_TOKEN(이 저장소 전용 fine-grained, **2027-02-06 만료** — 그 전에 새로 발급해 `.env` 교체)을 읽음
+   3. ~~첫 동기화~~ 성공(2026-11-08, run 42471832541, 8분): applyhome 67·competition 26,662·lh 74·trade 21,425행. KV 568건은 하루 쓰기 한도로 다음 실행에 이어 씀. 청약통장 통계는 가입기간별 엔드포인트가 쪽 상한(20쪽)을 넘어 건너뜀 → 상한 80쪽으로 수정(최근 3개월 25,941행 실측). 다음 동기화에서 `/competition` 청약통장 표가 채워지는지 확인
+      - 확인 완료: 실거래 `LAWD_CD` 는 12xxx(전남광주통합특별시, 355건)이고 29xxx/46xxx 없음 / `BLNC_SECD` 02·03 라벨은 실데이터 BLNC_SECD_NM 과 같음
    4. 도메인 연결 뒤 서치콘솔·네이버 사이트맵 제출, `npm run ops:daily` 예약
-   5. DART 키 발급 뒤 `ipo:{고유번호}` 묶음과 `ipo-*` 일정 생산(동기화 쪽) — 화면은 준비됨
+   5. (DART 키는 Secrets 에 있음) `ipo:{고유번호}` 묶음과 `ipo-*` 일정 생산(동기화 쪽) — 화면은 준비됨
 - 배포 전 확인: 원격 D1 에 옛 0001(area_kind 없음)이 적용된 적 없는지 — 0001 을 제자리에서 고쳤음 (`docs/deploy.md` 2단계)
 - 새로 clone 하면 `npm run cf-typegen` (`worker-configuration.d.ts` 는 git 제외)
 

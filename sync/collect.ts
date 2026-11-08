@@ -120,6 +120,7 @@ export async function collectAccount(fetch: Fetch, key: string, today: string): 
   const svc = 'ApplyhomeBnkbStatSvc/v1';
   const all = await odcloudAll(fetch, key, `${svc}/getBnkbAcnutAllStat`, cond);
   const deposit = await odcloudAll(fetch, key, `${svc}/getBnkbAcnutDpstStat`, cond);
-  const subscribe = await odcloudAll(fetch, key, `${svc}/getBnkbAcnutSbscrbStat`, cond);
+  // 가입기간별은 최근 3개월만 2만 6천 행(2026-11 실측, 52쪽) — 4만 행까지 받는다
+  const subscribe = await odcloudAll(fetch, key, `${svc}/getBnkbAcnutSbscrbStat`, cond, 80);
   return toAccountRows(all, deposit, subscribe);
 }
